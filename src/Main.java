@@ -93,7 +93,7 @@ public class Main {
     private static void playGame() {
         deck.clear();
 
-        String[] colors = {"R", "Y", "G", "B"};
+        String[] colors = {"", "Y", "G", "B"};
         for (String color : colors) {
             deck.add(color + "0");
             for (int n = 1; n <= 9; n++) {
