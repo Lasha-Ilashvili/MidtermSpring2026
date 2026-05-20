@@ -1,11 +1,12 @@
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Random;
-import java.util.Scanner;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class Main {
 
-    private static final Scanner scanner = new Scanner(System.in);
+    private static Scanner scanner = new Scanner(System.in);
     private static final ArrayList<ArrayList<String>> hands = new ArrayList<>();
     private static final ArrayList<String> playerNames = new ArrayList<>();
     private static final ArrayList<String> deck = new ArrayList<>();
@@ -513,31 +514,362 @@ public class Main {
         return out.toString();
     }
 
+    /* TESTS */
+    private static String selfTestCapturedOutput = "";
+
     private static void selfTest() {
         int passed = 0;
-        if (color("R5").equals("R")) passed++; else fail("color R5");
-        if (rank("G+2").equals("DRAW_TWO")) passed++; else fail("rank +2");
-        if (points("W4") == 50) passed++; else fail("wild points");
-        if (isLegal("R2", "R9", "")) passed++; else fail("same color");
-        if (isLegal("G9", "R9", "")) passed++; else fail("same number");
-        if (isLegal("B3", "W", "B")) passed++; else fail("called color");
-        if (!isLegal("B3", "R9", "")) passed++; else fail("illegal mismatch");
-
-        ArrayList<String> h = new ArrayList<>();
-        h.add("B3");
-        h.add("R4");
-        h.add("W");
-        upCard = "R9";
-        calledColor = "";
-        if (chooseBotCard(h) == 1) passed++; else fail("bot normal before wild");
-
-        ArrayList<String> h2 = new ArrayList<>();
-        h2.add("B1");
-        h2.add("B2");
-        h2.add("R3");
-        if (chooseBotColor(h2).equals("B")) passed++; else fail("bot color");
+        passed += selfTestCards();
+        passed += selfTestLegalPlays();
+        passed += selfTestBotChoices();
+        passed += selfTestHumanInputQuirks();
+        passed += selfTestConsoleBehavior();
+        passed += selfTestDrawPile();
+        passed += selfTestDrawnCardDecisions();
+        passed += selfTestPenaltyPaths();
+        passed += selfTestTurnMovement();
+        passed += selfTestScoring();
+        passed += selfTestSeededBotGames();
 
         System.out.println("Passed " + passed + " characterization checks.");
+    }
+
+    private static int selfTestCards() {
+        int passed = 0;
+        passed += check(color("R5").equals("R"), "color R5");
+        passed += check(color("YS").equals("Y"), "color YS");
+        passed += check(color("G+2").equals("G"), "color G+2");
+        passed += check(color("BR").equals("B"), "color BR");
+        passed += check(color("W").isEmpty(), "wild has no printed color");
+        passed += check(rank("W").equals("WILD"), "rank wild");
+        passed += check(rank("W4").equals("WILD_DRAW_FOUR"), "rank wild draw four");
+        passed += check(rank("RS").equals("SKIP"), "rank skip");
+        passed += check(rank("BR").equals("REVERSE"), "rank reverse");
+        passed += check(rank("G+2").equals("DRAW_TWO"), "rank +2");
+        passed += check(rank("B7").equals("NUMBER"), "rank number");
+        passed += check(number("R0") == 0, "number zero");
+        passed += check(number("B9") == 9, "number nine");
+        passed += check(number("W") == -1, "wild has no number");
+        passed += check(number("R+2") == -1, "draw two has no number");
+        return passed;
+    }
+
+    private static int selfTestLegalPlays() {
+        int passed = 0;
+        passed += check(isLegal("R2", "R9", ""), "same color");
+        passed += check(isLegal("G9", "R9", ""), "same number");
+        passed += check(isLegal("BS", "RS", ""), "same skip action");
+        passed += check(isLegal("BR", "YR", ""), "same reverse action");
+        passed += check(isLegal("R+2", "B+2", ""), "same draw two action");
+        passed += check(isLegal("W", "B3", ""), "plain wild always legal");
+        passed += check(isLegal("W4", "B3", ""), "wild draw four always legal");
+        passed += check(isLegal("B3", "W", "B"), "called color after wild");
+        passed += check(isLegal("B3", "R9", "B"), "called color can beat up card color");
+        passed += check(!isLegal("B3", "R9", ""), "illegal mismatch");
+        passed += check(!isLegal("B3", "R+2", ""), "number does not match action");
+        return passed;
+    }
+
+    private static int selfTestBotChoices() {
+        int passed = 0;
+        upCard = "R9";
+        calledColor = "";
+        passed += check(chooseBotCard(cards("B3", "R4", "W")) == 1, "bot number before wild");
+        passed += check(chooseBotCard(cards("R4", "R+2", "W")) == 1, "bot draw two priority");
+
+        upCard = "G9";
+        passed += check(chooseBotCard(cards("G3", "GS", "W")) == 1, "bot skip priority");
+
+        upCard = "YR";
+        calledColor = "";
+        passed += check(chooseBotCard(cards("BR", "W")) == 1, "bot reverse quirk before wild");
+
+        upCard = "W";
+        calledColor = "G";
+        passed += check(chooseBotCard(cards("R1", "G3")) == 1, "bot uses called color");
+
+        upCard = "R9";
+        calledColor = "";
+        passed += check(chooseBotCard(cards("B1", "G2")) == -1, "bot draws when no legal card");
+        passed += check(chooseBotColor(cards("B1", "B2", "R3")).equals("B"), "bot color majority");
+        passed += check(chooseBotColor(cards("R1", "Y2", "G3", "B4")).equals("R"), "bot color tie defaults red");
+        return passed;
+    }
+
+    private static int selfTestHumanInputQuirks() {
+        int passed = 0;
+        upCard = "R5";
+        calledColor = "";
+        passed += check(askHumanForSelfTest(cards("R9"), "draw\n") == -1, "human can draw while holding legal card");
+
+        upCard = "R5";
+        calledColor = "";
+        passed += check(askHumanForSelfTest(cards("B3", "R9"), "0\n") == 0, "human index input bypasses legality check");
+        passed += check(!isLegal("B3", upCard, calledColor), "indexed illegal card remains illegal later");
+
+        upCard = "R5";
+        calledColor = "";
+        passed += check(askHumanForSelfTest(cards("B3", "R9"), "B3\nR9\n") == 1, "human card code rejects illegal card");
+        passed += check(selfTestCapturedOutput.contains("That card is not legal."), "illegal code prints not legal message");
+        passed += check(selfTestCapturedOutput.contains("Card not found."), "illegal code also prints card not found quirk");
+        return passed;
+    }
+
+    private static int selfTestConsoleBehavior() {
+        int passed = 0;
+        passed += check(join(cards("R5", "W", "B+2")).equals("0:R5 1:W 2:B+2"), "hand display includes indexes");
+        passed += check(askColorForSelfTest().equals("B"), "human color prompt accepts valid color after bad input");
+        passed += check(selfTestCapturedOutput.contains("Bad color."), "bad color message");
+        return passed;
+    }
+
+    private static int selfTestDrawPile() {
+        int passed = 0;
+        random = new Random(7);
+        deck.clear();
+        discard.clear();
+        deck.add("R1");
+        deck.add("B2");
+        passed += check(draw().equals("R1"), "draw removes top deck card");
+        passed += check(deck.size() == 1 && deck.getFirst().equals("B2"), "draw leaves remaining deck");
+
+        deck.clear();
+        discard.clear();
+        discard.add("G5");
+        passed += check(draw().equals("G5"), "empty deck refills from discard");
+        passed += check(discard.isEmpty(), "discard cleared after refill");
+
+        deck.clear();
+        discard.clear();
+        passed += check(draw().equals("W"), "empty draw and discard fallback");
+        return passed;
+    }
+
+    private static int selfTestDrawnCardDecisions() {
+        int passed = 0;
+        setupPlayers(2, false);
+        currentPlayer = 0;
+        upCard = "R5";
+        calledColor = "";
+        ArrayList<String> botHand = hands.get(currentPlayer);
+        int chosen = -1;
+        String drawn = "R9";
+        botHand.add(drawn);
+        if (isLegal(drawn, upCard, calledColor) && !humanPlayers.get(currentPlayer)) {
+            chosen = botHand.size() - 1;
+        }
+        passed += check(chosen == 0, "bot auto plays legal drawn card");
+
+        setupPlayers(2, false);
+        currentPlayer = 0;
+        upCard = "R5";
+        calledColor = "";
+        botHand = hands.get(currentPlayer);
+        chosen = -1;
+        drawn = "B3";
+        botHand.add(drawn);
+        if (isLegal(drawn, upCard, calledColor) && !humanPlayers.get(currentPlayer)) {
+            chosen = botHand.size() - 1;
+        }
+        passed += check(chosen == -1, "bot keeps illegal drawn card");
+
+        setupPlayers(1, true);
+        currentPlayer = 0;
+        upCard = "R5";
+        calledColor = "";
+        ArrayList<String> humanHand = hands.get(currentPlayer);
+        chosen = -1;
+        drawn = "R9";
+        humanHand.add(drawn);
+        if (isLegal(drawn, upCard, calledColor) && !humanPlayers.get(currentPlayer)) {
+            chosen = humanHand.size() - 1;
+        }
+        passed += check(chosen == -1, "human does not auto play drawn card");
+        return passed;
+    }
+
+    private static int selfTestPenaltyPaths() {
+        int passed = 0;
+        setupPlayers(1, true);
+        currentPlayer = 0;
+        direction = 1;
+        upCard = "R5";
+        calledColor = "";
+        ArrayList<String> hand = hands.get(currentPlayer);
+        hand.add("B3");
+        deck.clear();
+        discard.clear();
+        deck.add("Y7");
+
+        int chosen = 0;
+        if (!isLegal(hand.get(chosen), upCard, calledColor)) {
+            hand.add(draw());
+            next();
+        }
+        passed += check(hand.size() == 2 && hand.get(1).equals("Y7"), "illegal indexed card draws penalty card");
+        passed += check(currentPlayer == 1, "illegal indexed card loses turn");
+
+        setupPlayers(1, true);
+        currentPlayer = 0;
+        direction = 1;
+        deck.clear();
+        discard.clear();
+        deck.add("G4");
+        hand = hands.get(currentPlayer);
+        chosen = 3;
+        if (chosen >= hand.size()) {
+            hand.add(draw());
+            next();
+        }
+        passed += check(hand.size() == 1 && hand.getFirst().equals("G4"), "out of range selected index draws penalty card");
+        passed += check(currentPlayer == 1, "out of range selected index loses turn");
+        return passed;
+    }
+
+    private static int selfTestTurnMovement() {
+        int passed = 0;
+        setupPlayers(3, false);
+        currentPlayer = 0;
+        direction = 1;
+        next();
+        passed += check(currentPlayer == 1, "next moves clockwise");
+
+        currentPlayer = 2;
+        direction = 1;
+        next();
+        passed += check(currentPlayer == 0, "next wraps clockwise");
+
+        currentPlayer = 0;
+        direction = -1;
+        next();
+        passed += check(currentPlayer == 2, "next wraps counterclockwise");
+
+        currentPlayer = 0;
+        direction = 1;
+        next();
+        next();
+        passed += check(currentPlayer == 2, "skip advances over one player");
+
+        currentPlayer = 0;
+        direction = 1;
+        direction = direction * -1;
+        next();
+        passed += check(currentPlayer == 2 && direction == -1, "reverse changes direction with three players");
+
+        setupPlayers(1, true);
+        currentPlayer = 0;
+        direction = 1;
+        direction = direction * -1;
+        next();
+        next();
+        passed += check(currentPlayer == 0 && direction == -1, "reverse skips other player with two players");
+
+        setupPlayers(3, false);
+        currentPlayer = 0;
+        direction = 1;
+        deck.clear();
+        discard.clear();
+        deck.add("R1");
+        deck.add("B2");
+        next();
+        hands.get(currentPlayer).add(draw());
+        hands.get(currentPlayer).add(draw());
+        next();
+        passed += check(hands.get(1).size() == 2 && currentPlayer == 2, "draw two draws and skips");
+
+        setupPlayers(3, false);
+        currentPlayer = 0;
+        direction = 1;
+        deck.clear();
+        discard.clear();
+        deck.add("R1");
+        deck.add("Y2");
+        deck.add("G3");
+        deck.add("B4");
+        next();
+        for (int i = 0; i < 4; i++) {
+            hands.get(currentPlayer).add(draw());
+        }
+        next();
+        passed += check(hands.get(1).size() == 4 && currentPlayer == 2, "wild draw four draws and skips");
+        return passed;
+    }
+
+    private static int selfTestScoring() {
+        int passed = 0;
+        passed += check(points("R0") == 0, "zero points");
+        passed += check(points("B9") == 9, "number points");
+        passed += check(points("GS") == 20, "skip points");
+        passed += check(points("GR") == 20, "reverse points");
+        passed += check(points("G+2") == 20, "draw two points");
+        passed += check(points("W") == 50, "wild points");
+        passed += check(points("W4") == 50, "wild draw four points");
+
+        int total = 0;
+        for (String card : cards("R5", "B9", "GS", "W")) {
+            total += points(card);
+        }
+        passed += check(total == 84, "losing hand score example");
+        return passed;
+    }
+
+    private static int selfTestSeededBotGames() {
+        int passed = 0;
+        quiet = true;
+        random = new Random(123);
+        setupPlayers(3, false);
+        Arrays.fill(scores, 0);
+        for (int game = 0; game < 5; game++) {
+            playGame();
+        }
+        passed += check(scores[0] == 138, "seeded bot games score Bot1");
+        passed += check(scores[1] == 246, "seeded bot games score Bot2");
+        passed += check(scores[2] == 98, "seeded bot games score Bot3");
+        quiet = false;
+        return passed;
+    }
+
+    private static int check(boolean condition, String name) {
+        if (!condition) {
+            fail(name);
+        }
+        return 1;
+    }
+
+    private static int askHumanForSelfTest(ArrayList<String> hand, String input) {
+        Scanner originalScanner = scanner;
+        PrintStream originalOut = System.out;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        scanner = new Scanner(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
+        System.setOut(new PrintStream(output));
+        try {
+            return askHuman(hand);
+        } finally {
+            System.setOut(originalOut);
+            scanner = originalScanner;
+            selfTestCapturedOutput = output.toString(StandardCharsets.UTF_8);
+        }
+    }
+
+    private static String askColorForSelfTest() {
+        Scanner originalScanner = scanner;
+        PrintStream originalOut = System.out;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        scanner = new Scanner(new ByteArrayInputStream("x\nb\n".getBytes(StandardCharsets.UTF_8)));
+        System.setOut(new PrintStream(output));
+        try {
+            return askColor();
+        } finally {
+            System.setOut(originalOut);
+            scanner = originalScanner;
+            selfTestCapturedOutput = output.toString(StandardCharsets.UTF_8);
+        }
+    }
+
+    private static ArrayList<String> cards(String... values) {
+        ArrayList<String> result = new ArrayList<>();
+        Collections.addAll(result, values);
+        return result;
     }
 
     private static void fail(String name) {
