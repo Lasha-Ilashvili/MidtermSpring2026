@@ -19,7 +19,7 @@ jobs:
           java-version: "21"
 
       - name: Compile
-        run: zsh scripts/compile.sh
+        run: sh scripts/compile.sh
 
       - name: Run characterization tests
-        run: zsh scripts/test.sh
+        run: sh scripts/test.sh
