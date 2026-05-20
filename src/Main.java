@@ -14,6 +14,8 @@ public class Main {
     private static final ArrayList<Boolean> humanPlayers = new ArrayList<>();
     private static final int[] scores = new int[10];
 
+
+
     private static Random random = new Random();
     private static String upCard = "";
     private static String calledColor = "";
