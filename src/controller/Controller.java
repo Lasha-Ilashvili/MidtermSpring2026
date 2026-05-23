@@ -3,13 +3,19 @@ package controller;
 import model.Model;
 import ui.UIEngine;
 import ui.UiEvent;
+import ui.UiType;
+import ui.cli.CLIEngine;
 
 public class Controller {
 
     private final Model model;
     private final UIEngine uiEngine;
 
-    public static void startNewGame(UIEngine uiEngine) {
+    public static void startNewGame(UiType uiType) {
+        UIEngine uiEngine = switch (uiType) {
+            case CLI -> new CLIEngine();
+        };
+
         new Controller(uiEngine, new Model()).startGame();
     }
 
