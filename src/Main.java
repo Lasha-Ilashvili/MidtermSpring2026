@@ -3,10 +3,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Supplier;
 
 public class Main {
 
-    private static Scanner scanner = new Scanner(System.in);
+    private static final InnerView view = new InnerView();
     private static final ArrayList<ArrayList<String>> hands = new ArrayList<>();
     private static final ArrayList<String> playerNames = new ArrayList<>();
     private static final ArrayList<String> deck = new ArrayList<>();
@@ -44,7 +45,7 @@ public class Main {
                 selfTest();
                 return;
             } else if (args[i].equals("--help")) {
-                System.out.println("Usage: scripts/run.sh [--bots N] [--games N] [--human] [--quiet] [--seed N]");
+                view.showUsage();
                 return;
             }
         }
@@ -53,21 +54,18 @@ public class Main {
         setupPlayers(bots, human);
 
         if (playerNames.size() < 2 || playerNames.size() > 4) {
-            System.out.println("UNO needs 2 to 4 players.");
+            view.showInvalidPlayerCount();
             return;
         }
 
         for (int gameCount = 1; gameCount <= games; gameCount++) {
             if (!quiet) {
-                System.out.println("\n=== Game " + gameCount + " ===");
+                view.showGameHeader(gameCount);
             }
             playGame();
         }
 
-        System.out.println("\nFinal scores:");
-        for (int player = 0; player < playerNames.size(); player++) {
-            System.out.println(playerNames.get(player) + ": " + scores[player]);
-        }
+        view.showFinalScores(playerNames, scores);
     }
 
     private static void setupPlayers(int bots, boolean human) {
@@ -141,8 +139,7 @@ public class Main {
             ArrayList<String> hand = hands.get(currentPlayer);
 
             if (!quiet) {
-                System.out.println("\nUp card: " + upCard + (calledColor.isEmpty() ? "" : " called " + calledColor));
-                System.out.println(name + " hand: " + join(hand));
+                view.showTurn(name, hand, upCard, calledColor);
             }
 
             int chosen;
@@ -158,15 +155,15 @@ public class Main {
                 hand.add(drawn);
 
                 if (!quiet) {
-                    System.out.println(name + " draws " + drawn);
+                    view.showCardDrawn(name, drawn);
                 }
 
                 if (isLegal(drawn, upCard, calledColor)) {
                     if (!humanPlayers.get(currentPlayer)) {
                         chosen = hand.size() - 1;
                     } else {
-                        System.out.print("Play drawn card " + drawn + "? y/n: ");
-                        String answer = scanner.nextLine();
+                        view.showPlayDrawnCardPrompt(drawn);
+                        String answer = view.readPlayDrawnCardAnswer();
 
                         if (answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes")) {
                             chosen = hand.size() - 1;
@@ -178,7 +175,7 @@ public class Main {
             if (chosen >= 0) {
                 if (chosen >= hand.size()) {
                     if (!quiet) {
-                        System.out.println(name + " selected an invalid index and draws a penalty card.");
+                        view.showInvalidIndexPenalty(name);
                     }
                     hand.add(draw());
                     next();
@@ -206,7 +203,7 @@ public class Main {
 
                 if (!ok) {
                     if (!quiet) {
-                        System.out.println(name + " tried illegal card " + card + " and draws a penalty card.");
+                        view.showIllegalCardPenalty(name, card);
                     }
                     hand.add(draw());
                     next();
@@ -218,7 +215,7 @@ public class Main {
                 upCard = card;
                 calledColor = "";
                 if (!quiet) {
-                    System.out.println(name + " plays " + card);
+                    view.showCardPlayed(name, card);
                 }
 
                 if (card.equals("W") || card.equals("W4")) {
@@ -228,12 +225,12 @@ public class Main {
                         calledColor = chooseBotColor(hand);
                     }
                     if (!quiet) {
-                        System.out.println(name + " calls " + calledColor);
+                        view.showColorCalled(name, calledColor);
                     }
                 }
 
                 if (hand.size() == 1 && !quiet) {
-                    System.out.println(name + " says UNO!");
+                    view.showUno(name);
                 }
 
                 if (hand.isEmpty()) {
@@ -247,7 +244,7 @@ public class Main {
                     }
                     scores[currentPlayer] += points;
                     if (!quiet) {
-                        System.out.println(name + " wins and scores " + points);
+                        view.showWinnerScore(name, points);
                     }
                     return;
                 }
@@ -268,7 +265,7 @@ public class Main {
                     hands.get(currentPlayer).add(draw());
                     hands.get(currentPlayer).add(draw());
                     if (!quiet) {
-                        System.out.println(playerNames.get(currentPlayer) + " draws two.");
+                        view.showDrawTwoPenalty(playerNames.get(currentPlayer));
                     }
                     next();
                 } else if (rank(card).equals("WILD_DRAW_FOUR")) {
@@ -277,7 +274,7 @@ public class Main {
                         hands.get(currentPlayer).add(draw());
                     }
                     if (!quiet) {
-                        System.out.println(playerNames.get(currentPlayer) + " draws four.");
+                        view.showDrawFourPenalty(playerNames.get(currentPlayer));
                     }
                     next();
                 } else {
@@ -289,7 +286,7 @@ public class Main {
         }
 
         if (!quiet) {
-            System.out.println("Game stopped at safety limit.");
+            view.showSafetyLimitReached();
         }
     }
 
@@ -354,8 +351,8 @@ public class Main {
 
     private static int askHuman(ArrayList<String> hand) {
         while (true) {
-            System.out.print("Choose card index/code or draw: ");
-            String input = scanner.nextLine().trim().toUpperCase();
+            view.showChooseCardPrompt();
+            String input = view.readCardChoiceInput();
             if (input.equals("DRAW")) {
                 return -1;
             }
@@ -371,17 +368,17 @@ public class Main {
                     if (isLegal(hand.get(i), upCard, calledColor)) {
                         return i;
                     }
-                    System.out.println("That card is not legal.");
+                    view.showCardNotLegal();
                 }
             }
-            System.out.println("Card not found.");
+            view.showCardNotFound();
         }
     }
 
     private static String askColor() {
         while (true) {
-            System.out.print("Call color R/Y/G/B: ");
-            String input = scanner.nextLine().trim().toUpperCase();
+            view.showCallColorPrompt();
+            String input = view.readColorInput();
             switch (input) {
                 case "R" -> {
                     return "R";
@@ -396,7 +393,7 @@ public class Main {
                     return "B";
                 }
             }
-            System.out.println("Bad color.");
+            view.showBadColor();
         }
     }
 
@@ -512,6 +509,121 @@ public class Main {
             }
         }
         return out.toString();
+    }
+
+    private static class InnerView {
+
+        private Scanner scanner = new Scanner(System.in);
+
+        private void showTurn(String playerName, ArrayList<String> hand, String upCard, String calledColor) {
+            System.out.println("\nUp card: " + upCard + (calledColor.isEmpty() ? "" : " called " + calledColor));
+            System.out.println(playerName + " hand: " + join(hand));
+        }
+
+        private void showCardDrawn(String playerName, String card) {
+            System.out.println(playerName + " draws " + card);
+        }
+
+        private void showInvalidIndexPenalty(String playerName) {
+            System.out.println(playerName + " selected an invalid index and draws a penalty card.");
+        }
+
+        private void showIllegalCardPenalty(String playerName, String card) {
+            System.out.println(playerName + " tried illegal card " + card + " and draws a penalty card.");
+        }
+
+        private void showCardPlayed(String playerName, String card) {
+            System.out.println(playerName + " plays " + card);
+        }
+
+        private void showColorCalled(String playerName, String color) {
+            System.out.println(playerName + " calls " + color);
+        }
+
+        private void showUno(String playerName) {
+            System.out.println(playerName + " says UNO!");
+        }
+
+        private void showWinnerScore(String playerName, int points) {
+            System.out.println(playerName + " wins and scores " + points);
+        }
+
+        private void showDrawTwoPenalty(String playerName) {
+            System.out.println(playerName + " draws two.");
+        }
+
+        private void showDrawFourPenalty(String playerName) {
+            System.out.println(playerName + " draws four.");
+        }
+
+        private void showSafetyLimitReached() {
+            System.out.println("Game stopped at safety limit.");
+        }
+
+        private void showChooseCardPrompt() {
+            System.out.print("Choose card index/code or draw: ");
+        }
+
+        private void showCardNotLegal() {
+            System.out.println("That card is not legal.");
+        }
+
+        private void showCardNotFound() {
+            System.out.println("Card not found.");
+        }
+
+        private void showCallColorPrompt() {
+            System.out.print("Call color R/Y/G/B: ");
+        }
+
+        private void showBadColor() {
+            System.out.println("Bad color.");
+        }
+
+        private void showPlayDrawnCardPrompt(String card) {
+            System.out.print("Play drawn card " + card + "? y/n: ");
+        }
+
+        private void showUsage() {
+            System.out.println("Usage: scripts/run.sh [--bots N] [--games N] [--human] [--quiet] [--seed N]");
+        }
+
+        private void showInvalidPlayerCount() {
+            System.out.println("UNO needs 2 to 4 players.");
+        }
+
+        private void showGameHeader(int gameCount) {
+            System.out.println("\n=== Game " + gameCount + " ===");
+        }
+
+        private void showFinalScores(ArrayList<String> playerNames, int[] scores) {
+            System.out.println("\nFinal scores:");
+            for (int player = 0; player < playerNames.size(); player++) {
+                System.out.println(playerNames.get(player) + ": " + scores[player]);
+            }
+        }
+
+        private String readPlayDrawnCardAnswer() {
+            return scanner.nextLine();
+        }
+
+        private String readCardChoiceInput() {
+            return scanner.nextLine().trim().toUpperCase();
+        }
+
+        private String readColorInput() {
+            return scanner.nextLine().trim().toUpperCase();
+        }
+
+        private <T> T withInput(String input, Supplier<T> action) {
+            Scanner originalScanner = this.scanner;
+            this.scanner = new Scanner(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
+            try {
+                return action.get();
+            } finally {
+                this.scanner = originalScanner;
+            }
+        }
     }
 
     /* TESTS */
@@ -837,31 +949,25 @@ public class Main {
     }
 
     private static int askHumanForSelfTest(ArrayList<String> hand, String input) {
-        Scanner originalScanner = scanner;
         PrintStream originalOut = System.out;
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        scanner = new Scanner(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
         System.setOut(new PrintStream(output));
         try {
-            return askHuman(hand);
+            return view.withInput(input, () -> askHuman(hand));
         } finally {
             System.setOut(originalOut);
-            scanner = originalScanner;
             selfTestCapturedOutput = output.toString(StandardCharsets.UTF_8);
         }
     }
 
     private static String askColorForSelfTest() {
-        Scanner originalScanner = scanner;
         PrintStream originalOut = System.out;
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        scanner = new Scanner(new ByteArrayInputStream("x\nb\n".getBytes(StandardCharsets.UTF_8)));
         System.setOut(new PrintStream(output));
         try {
-            return askColor();
+            return view.withInput("x\nb\n", Main::askColor);
         } finally {
             System.setOut(originalOut);
-            scanner = originalScanner;
             selfTestCapturedOutput = output.toString(StandardCharsets.UTF_8);
         }
     }
