@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 public class Main {
 
+    private static final InnerModel model = new InnerModel();
     private static final InnerView view = new InnerView();
     private static final ArrayList<ArrayList<String>> hands = new ArrayList<>();
     private static final ArrayList<String> playerNames = new ArrayList<>();
@@ -158,7 +159,7 @@ public class Main {
                     view.showCardDrawn(name, drawn);
                 }
 
-                if (isLegal(drawn, upCard, calledColor)) {
+                if (model.isLegal(drawn, upCard, calledColor)) {
                     if (!humanPlayers.get(currentPlayer)) {
                         chosen = hand.size() - 1;
                     } else {
@@ -184,10 +185,10 @@ public class Main {
 
                 String card = hand.get(chosen);
                 boolean ok = false;
-                String cardColor = color(card);
-                String upColor = color(upCard);
-                String cardRank = rank(card);
-                String upRank = rank(upCard);
+                String cardColor = model.color(card);
+                String upColor = model.color(upCard);
+                String cardRank = model.rank(card);
+                String upRank = model.rank(upCard);
 
                 if (card.startsWith("W")) {
                     ok = true;
@@ -197,7 +198,7 @@ public class Main {
                     ok = true;
                 } else if (cardRank.equals(upRank) && !cardRank.equals("NUMBER")) {
                     ok = true;
-                } else if (cardRank.equals("NUMBER") && upRank.equals("NUMBER") && number(card) == number(upCard)) {
+                } else if (cardRank.equals("NUMBER") && upRank.equals("NUMBER") && model.number(card) == model.number(upCard)) {
                     ok = true;
                 }
 
@@ -238,7 +239,7 @@ public class Main {
                     for (int i = 0; i < hands.size(); i++) {
                         if (i != currentPlayer) {
                             for (int j = 0; j < hands.get(i).size(); j++) {
-                                points += points(hands.get(i).get(j));
+                                points += model.points(hands.get(i).get(j));
                             }
                         }
                     }
@@ -249,10 +250,10 @@ public class Main {
                     return;
                 }
 
-                if (rank(card).equals("SKIP")) {
+                if (model.rank(card).equals("SKIP")) {
                     next();
                     next();
-                } else if (rank(card).equals("REVERSE")) {
+                } else if (model.rank(card).equals("REVERSE")) {
                     direction = direction * -1;
                     if (playerNames.size() == 2) {
                         next();
@@ -260,7 +261,7 @@ public class Main {
                     } else {
                         next();
                     }
-                } else if (rank(card).equals("DRAW_TWO")) {
+                } else if (model.rank(card).equals("DRAW_TWO")) {
                     next();
                     hands.get(currentPlayer).add(draw());
                     hands.get(currentPlayer).add(draw());
@@ -268,7 +269,7 @@ public class Main {
                         view.showDrawTwoPenalty(playerNames.get(currentPlayer));
                     }
                     next();
-                } else if (rank(card).equals("WILD_DRAW_FOUR")) {
+                } else if (model.rank(card).equals("WILD_DRAW_FOUR")) {
                     next();
                     for (int i = 0; i < 4; i++) {
                         hands.get(currentPlayer).add(draw());
@@ -309,11 +310,11 @@ public class Main {
             String card = hand.get(i);
             boolean ok = false;
             if (card.startsWith("W")) ok = true;
-            else if (color(card).equals(color(upCard))) ok = true;
-            else if (!calledColor.isEmpty() && color(card).equals(calledColor)) ok = true;
-            else if (rank(card).equals(rank(upCard)) && !rank(card).equals("NUMBER")) ok = true;
-            else if (rank(card).equals("NUMBER") && rank(upCard).equals("NUMBER") && number(card) == number(upCard)) ok = true;
-            if (rank(card).equals("DRAW_TWO") && ok) {
+            else if (model.color(card).equals(model.color(upCard))) ok = true;
+            else if (!calledColor.isEmpty() && model.color(card).equals(calledColor)) ok = true;
+            else if (model.rank(card).equals(model.rank(upCard)) && !model.rank(card).equals("NUMBER")) ok = true;
+            else if (model.rank(card).equals("NUMBER") && model.rank(upCard).equals("NUMBER") && model.number(card) == model.number(upCard)) ok = true;
+            if (model.rank(card).equals("DRAW_TWO") && ok) {
                 return i;
             }
         }
@@ -321,11 +322,11 @@ public class Main {
             String card = hand.get(i);
             boolean ok = false;
             if (card.startsWith("W")) ok = true;
-            else if (color(card).equals(color(upCard))) ok = true;
-            else if (!calledColor.isEmpty() && color(card).equals(calledColor)) ok = true;
-            else if (rank(card).equals(rank(upCard)) && !rank(card).equals("NUMBER")) ok = true;
-            else if (rank(card).equals("NUMBER") && rank(upCard).equals("NUMBER") && number(card) == number(upCard)) ok = true;
-            if (rank(card).equals("SKIP") && ok) {
+            else if (model.color(card).equals(model.color(upCard))) ok = true;
+            else if (!calledColor.isEmpty() && model.color(card).equals(calledColor)) ok = true;
+            else if (model.rank(card).equals(model.rank(upCard)) && !model.rank(card).equals("NUMBER")) ok = true;
+            else if (model.rank(card).equals("NUMBER") && model.rank(upCard).equals("NUMBER") && model.number(card) == model.number(upCard)) ok = true;
+            if (model.rank(card).equals("SKIP") && ok) {
                 return i;
             }
         }
@@ -333,11 +334,11 @@ public class Main {
             String card = hand.get(i);
             boolean ok = false;
             if (card.startsWith("W")) ok = true;
-            else if (color(card).equals(color(upCard))) ok = true;
-            else if (!calledColor.isEmpty() && color(card).equals(calledColor)) ok = true;
-            else if (rank(card).equals(rank(upCard)) && !rank(card).equals("NUMBER")) ok = true;
-            else if (rank(card).equals("NUMBER") && rank(upCard).equals("NUMBER") && number(card) == number(upCard)) ok = true;
-            if (rank(card).equals("NUMBER") && ok) {
+            else if (model.color(card).equals(model.color(upCard))) ok = true;
+            else if (!calledColor.isEmpty() && model.color(card).equals(calledColor)) ok = true;
+            else if (model.rank(card).equals(model.rank(upCard)) && !model.rank(card).equals("NUMBER")) ok = true;
+            else if (model.rank(card).equals("NUMBER") && model.rank(upCard).equals("NUMBER") && model.number(card) == model.number(upCard)) ok = true;
+            if (model.rank(card).equals("NUMBER") && ok) {
                 return i;
             }
         }
@@ -365,7 +366,7 @@ public class Main {
             }
             for (int i = 0; i < hand.size(); i++) {
                 if (hand.get(i).equals(input)) {
-                    if (isLegal(hand.get(i), upCard, calledColor)) {
+                    if (model.isLegal(hand.get(i), upCard, calledColor)) {
                         return i;
                     }
                     view.showCardNotLegal();
@@ -403,7 +404,7 @@ public class Main {
         int g = 0;
         int b = 0;
         for (String s : hand) {
-            String c = color(s);
+            String c = model.color(s);
             switch (c) {
                 case "R" -> r++;
                 case "Y" -> y++;
@@ -420,74 +421,6 @@ public class Main {
         } else {
             return "B";
         }
-    }
-
-    private static boolean isLegal(String card, String up, String call) {
-        if (card.startsWith("W")) {
-            return true;
-        }
-        if (color(card).equals(color(up))) {
-            return true;
-        }
-        if (!call.isEmpty() && color(card).equals(call)) {
-            return true;
-        }
-        if (rank(card).equals(rank(up)) && !rank(card).equals("NUMBER")) {
-            return true;
-        }
-        return rank(card).equals("NUMBER") && rank(up).equals("NUMBER") && number(card) == number(up);
-    }
-
-    private static String color(String card) {
-        if (card.startsWith("R")) {
-            return "R";
-        }
-        if (card.startsWith("Y")) {
-            return "Y";
-        }
-        if (card.startsWith("G")) {
-            return "G";
-        }
-        if (card.startsWith("B")) {
-            return "B";
-        }
-        return "";
-    }
-
-    private static String rank(String card) {
-        if (card.equals("W")) {
-            return "WILD";
-        }
-        if (card.equals("W4")) {
-            return "WILD_DRAW_FOUR";
-        }
-        if (card.endsWith("S")) {
-            return "SKIP";
-        }
-        if (card.endsWith("R")) {
-            return "REVERSE";
-        }
-        if (card.endsWith("+2")) {
-            return "DRAW_TWO";
-        }
-        return "NUMBER";
-    }
-
-    private static int number(String card) {
-        if (rank(card).equals("NUMBER")) {
-            return Integer.parseInt(card.substring(1));
-        }
-        return -1;
-    }
-
-    private static int points(String card) {
-        String r = rank(card);
-        return switch (r) {
-            case "NUMBER" -> number(card);
-            case "SKIP", "REVERSE", "DRAW_TWO" -> 20;
-            case "WILD", "WILD_DRAW_FOUR" -> 50;
-            default -> 0;
-        };
     }
 
     private static void next() {
@@ -509,6 +442,77 @@ public class Main {
             }
         }
         return out.toString();
+    }
+
+    private static class InnerModel {
+
+        private boolean isLegal(String card, String up, String call) {
+            if (card.startsWith("W")) {
+                return true;
+            }
+            if (color(card).equals(color(up))) {
+                return true;
+            }
+            if (!call.isEmpty() && color(card).equals(call)) {
+                return true;
+            }
+            if (rank(card).equals(rank(up)) && !rank(card).equals("NUMBER")) {
+                return true;
+            }
+            return rank(card).equals("NUMBER") && rank(up).equals("NUMBER") && number(card) == number(up);
+        }
+
+        private String color(String card) {
+            if (card.startsWith("R")) {
+                return "R";
+            }
+            if (card.startsWith("Y")) {
+                return "Y";
+            }
+            if (card.startsWith("G")) {
+                return "G";
+            }
+            if (card.startsWith("B")) {
+                return "B";
+            }
+            return "";
+        }
+
+        private String rank(String card) {
+            if (card.equals("W")) {
+                return "WILD";
+            }
+            if (card.equals("W4")) {
+                return "WILD_DRAW_FOUR";
+            }
+            if (card.endsWith("S")) {
+                return "SKIP";
+            }
+            if (card.endsWith("R")) {
+                return "REVERSE";
+            }
+            if (card.endsWith("+2")) {
+                return "DRAW_TWO";
+            }
+            return "NUMBER";
+        }
+
+        private int number(String card) {
+            if (rank(card).equals("NUMBER")) {
+                return Integer.parseInt(card.substring(1));
+            }
+            return -1;
+        }
+
+        private int points(String card) {
+            String r = rank(card);
+            return switch (r) {
+                case "NUMBER" -> number(card);
+                case "SKIP", "REVERSE", "DRAW_TWO" -> 20;
+                case "WILD", "WILD_DRAW_FOUR" -> 50;
+                default -> 0;
+            };
+        }
     }
 
     private static class InnerView {
@@ -648,37 +652,37 @@ public class Main {
 
     private static int selfTestCards() {
         int passed = 0;
-        passed += check(color("R5").equals("R"), "color R5");
-        passed += check(color("YS").equals("Y"), "color YS");
-        passed += check(color("G+2").equals("G"), "color G+2");
-        passed += check(color("BR").equals("B"), "color BR");
-        passed += check(color("W").isEmpty(), "wild has no printed color");
-        passed += check(rank("W").equals("WILD"), "rank wild");
-        passed += check(rank("W4").equals("WILD_DRAW_FOUR"), "rank wild draw four");
-        passed += check(rank("RS").equals("SKIP"), "rank skip");
-        passed += check(rank("BR").equals("REVERSE"), "rank reverse");
-        passed += check(rank("G+2").equals("DRAW_TWO"), "rank +2");
-        passed += check(rank("B7").equals("NUMBER"), "rank number");
-        passed += check(number("R0") == 0, "number zero");
-        passed += check(number("B9") == 9, "number nine");
-        passed += check(number("W") == -1, "wild has no number");
-        passed += check(number("R+2") == -1, "draw two has no number");
+        passed += check(model.color("R5").equals("R"), "color R5");
+        passed += check(model.color("YS").equals("Y"), "color YS");
+        passed += check(model.color("G+2").equals("G"), "color G+2");
+        passed += check(model.color("BR").equals("B"), "color BR");
+        passed += check(model.color("W").isEmpty(), "wild has no printed color");
+        passed += check(model.rank("W").equals("WILD"), "rank wild");
+        passed += check(model.rank("W4").equals("WILD_DRAW_FOUR"), "rank wild draw four");
+        passed += check(model.rank("RS").equals("SKIP"), "rank skip");
+        passed += check(model.rank("BR").equals("REVERSE"), "rank reverse");
+        passed += check(model.rank("G+2").equals("DRAW_TWO"), "rank +2");
+        passed += check(model.rank("B7").equals("NUMBER"), "rank number");
+        passed += check(model.number("R0") == 0, "number zero");
+        passed += check(model.number("B9") == 9, "number nine");
+        passed += check(model.number("W") == -1, "wild has no number");
+        passed += check(model.number("R+2") == -1, "draw two has no number");
         return passed;
     }
 
     private static int selfTestLegalPlays() {
         int passed = 0;
-        passed += check(isLegal("R2", "R9", ""), "same color");
-        passed += check(isLegal("G9", "R9", ""), "same number");
-        passed += check(isLegal("BS", "RS", ""), "same skip action");
-        passed += check(isLegal("BR", "YR", ""), "same reverse action");
-        passed += check(isLegal("R+2", "B+2", ""), "same draw two action");
-        passed += check(isLegal("W", "B3", ""), "plain wild always legal");
-        passed += check(isLegal("W4", "B3", ""), "wild draw four always legal");
-        passed += check(isLegal("B3", "W", "B"), "called color after wild");
-        passed += check(isLegal("B3", "R9", "B"), "called color can beat up card color");
-        passed += check(!isLegal("B3", "R9", ""), "illegal mismatch");
-        passed += check(!isLegal("B3", "R+2", ""), "number does not match action");
+        passed += check(model.isLegal("R2", "R9", ""), "same color");
+        passed += check(model.isLegal("G9", "R9", ""), "same number");
+        passed += check(model.isLegal("BS", "RS", ""), "same skip action");
+        passed += check(model.isLegal("BR", "YR", ""), "same reverse action");
+        passed += check(model.isLegal("R+2", "B+2", ""), "same draw two action");
+        passed += check(model.isLegal("W", "B3", ""), "plain wild always legal");
+        passed += check(model.isLegal("W4", "B3", ""), "wild draw four always legal");
+        passed += check(model.isLegal("B3", "W", "B"), "called color after wild");
+        passed += check(model.isLegal("B3", "R9", "B"), "called color can beat up card color");
+        passed += check(!model.isLegal("B3", "R9", ""), "illegal mismatch");
+        passed += check(!model.isLegal("B3", "R+2", ""), "number does not match action");
         return passed;
     }
 
@@ -717,7 +721,7 @@ public class Main {
         upCard = "R5";
         calledColor = "";
         passed += check(askHumanForSelfTest(cards("B3", "R9"), "0\n") == 0, "human index input bypasses legality check");
-        passed += check(!isLegal("B3", upCard, calledColor), "indexed illegal card remains illegal later");
+        passed += check(!model.isLegal("B3", upCard, calledColor), "indexed illegal card remains illegal later");
 
         upCard = "R5";
         calledColor = "";
@@ -767,7 +771,7 @@ public class Main {
         int chosen = -1;
         String drawn = "R9";
         botHand.add(drawn);
-        if (isLegal(drawn, upCard, calledColor) && !humanPlayers.get(currentPlayer)) {
+        if (model.isLegal(drawn, upCard, calledColor) && !humanPlayers.get(currentPlayer)) {
             chosen = botHand.size() - 1;
         }
         passed += check(chosen == 0, "bot auto plays legal drawn card");
@@ -780,7 +784,7 @@ public class Main {
         chosen = -1;
         drawn = "B3";
         botHand.add(drawn);
-        if (isLegal(drawn, upCard, calledColor) && !humanPlayers.get(currentPlayer)) {
+        if (model.isLegal(drawn, upCard, calledColor) && !humanPlayers.get(currentPlayer)) {
             chosen = botHand.size() - 1;
         }
         passed += check(chosen == -1, "bot keeps illegal drawn card");
@@ -793,7 +797,7 @@ public class Main {
         chosen = -1;
         drawn = "R9";
         humanHand.add(drawn);
-        if (isLegal(drawn, upCard, calledColor) && !humanPlayers.get(currentPlayer)) {
+        if (model.isLegal(drawn, upCard, calledColor) && !humanPlayers.get(currentPlayer)) {
             chosen = humanHand.size() - 1;
         }
         passed += check(chosen == -1, "human does not auto play drawn card");
@@ -814,7 +818,7 @@ public class Main {
         deck.add("Y7");
 
         int chosen = 0;
-        if (!isLegal(hand.get(chosen), upCard, calledColor)) {
+        if (!model.isLegal(hand.get(chosen), upCard, calledColor)) {
             hand.add(draw());
             next();
         }
@@ -909,17 +913,17 @@ public class Main {
 
     private static int selfTestScoring() {
         int passed = 0;
-        passed += check(points("R0") == 0, "zero points");
-        passed += check(points("B9") == 9, "number points");
-        passed += check(points("GS") == 20, "skip points");
-        passed += check(points("GR") == 20, "reverse points");
-        passed += check(points("G+2") == 20, "draw two points");
-        passed += check(points("W") == 50, "wild points");
-        passed += check(points("W4") == 50, "wild draw four points");
+        passed += check(model.points("R0") == 0, "zero points");
+        passed += check(model.points("B9") == 9, "number points");
+        passed += check(model.points("GS") == 20, "skip points");
+        passed += check(model.points("GR") == 20, "reverse points");
+        passed += check(model.points("G+2") == 20, "draw two points");
+        passed += check(model.points("W") == 50, "wild points");
+        passed += check(model.points("W4") == 50, "wild draw four points");
 
         int total = 0;
         for (String card : cards("R5", "B9", "GS", "W")) {
-            total += points(card);
+            total += model.points(card);
         }
         passed += check(total == 84, "losing hand score example");
         return passed;
