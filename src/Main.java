@@ -35,6 +35,30 @@ public class Main {
         }
     }
 
+    private static class PlayerInput {
+
+        private enum CardChoiceType {
+            DRAW,
+            INDEX,
+            CARD_CODE
+        }
+
+        private record CardChoice(CardChoiceType type, int index, String cardCode) {
+
+            private static CardChoice draw() {
+                return new CardChoice(CardChoiceType.DRAW, -1, "");
+            }
+
+            private static CardChoice index(int index) {
+                return new CardChoice(CardChoiceType.INDEX, index, "");
+            }
+
+            private static CardChoice cardCode(String cardCode) {
+                return new CardChoice(CardChoiceType.CARD_CODE, -1, cardCode);
+            }
+        }
+    }
+
     private sealed interface UiType permits UiType.Cli {
 
         record Cli(String[] args) implements UiType {
@@ -58,7 +82,6 @@ public class Main {
 
         private final InnerModel model;
         private final InnerView view;
-        private boolean quiet = false;
 
         private InnerController(InnerModel model, InnerView view) {
             this.model = model;
@@ -66,7 +89,7 @@ public class Main {
         }
 
         private void setQuiet(boolean quiet) {
-            this.quiet = quiet;
+            view.setQuiet(quiet);
         }
 
         private void startNewGame(UiType uiType) {
@@ -84,7 +107,7 @@ public class Main {
             if (startupInput.seed() != null) {
                 seed = Long.parseLong(startupInput.seed());
             }
-            quiet = startupInput.quiet();
+            view.setQuiet(startupInput.quiet());
 
             if (startupInput.action() == Startup.Action.SELF_TEST) {
                 selfTest();
@@ -100,19 +123,17 @@ public class Main {
             model.seedRandom(seed);
             model.setupPlayers(bots, startupInput.human());
 
-            if (model.playerCount() < 2 || model.playerCount() > 4) {
+            if (!model.isPlayerCountValid()) {
                 view.showInvalidPlayerCount();
                 return;
             }
 
             for (int gameCount = 1; gameCount <= games; gameCount++) {
-                if (!quiet) {
-                    view.showGameHeader(gameCount);
-                }
+                view.showGameHeader(gameCount);
                 playGame();
             }
 
-            view.showFinalScores(model.playerNames(), model.scores());
+            view.showFinalScores(model.playerNamesSnapshot(), model.scoresSnapshot());
         }
 
         private void playGame() {
@@ -123,9 +144,7 @@ public class Main {
                 guard++;
                 String name = model.currentPlayerName();
 
-                if (!quiet) {
-                    view.showTurn(name, model.currentHand(), model.upCard(), model.calledColor());
-                }
+                view.showTurn(name, model.currentHandSnapshot(), model.upCard(), model.calledColor());
 
                 int chosen;
 
@@ -138,29 +157,21 @@ public class Main {
                 if (chosen == -1) {
                     String drawn = model.drawForCurrentPlayer();
 
-                    if (!quiet) {
-                        view.showCardDrawn(name, drawn);
-                    }
+                    view.showCardDrawn(name, drawn);
 
-                    if (model.isLegalForCurrentState(drawn)) {
-                        if (!model.isHumanCurrentPlayer()) {
+                    if (model.shouldCurrentPlayerAutoPlayDrawnCard(drawn)) {
+                        chosen = model.lastCurrentHandIndex();
+                    } else if (model.shouldAskCurrentPlayerToPlayDrawnCard(drawn)) {
+                        view.showPlayDrawnCardPrompt(drawn);
+                        if (view.readPlayDrawnCardDecision()) {
                             chosen = model.lastCurrentHandIndex();
-                        } else {
-                            view.showPlayDrawnCardPrompt(drawn);
-                            String answer = view.readPlayDrawnCardAnswer();
-
-                            if (answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes")) {
-                                chosen = model.lastCurrentHandIndex();
-                            }
                         }
                     }
                 }
 
                 if (chosen >= 0) {
                     if (model.isOutsideCurrentHand(chosen)) {
-                        if (!quiet) {
-                            view.showInvalidIndexPenalty(name);
-                        }
+                        view.showInvalidIndexPenalty(name);
                         model.drawPenaltyAndAdvanceCurrentPlayer();
                         continue;
                     }
@@ -168,17 +179,13 @@ public class Main {
                     String card = model.currentHandCard(chosen);
 
                     if (!model.isLegalForCurrentState(card)) {
-                        if (!quiet) {
-                            view.showIllegalCardPenalty(name, card);
-                        }
+                        view.showIllegalCardPenalty(name, card);
                         model.drawPenaltyAndAdvanceCurrentPlayer();
                         continue;
                     }
 
                     model.playCardFromCurrentHand(chosen);
-                    if (!quiet) {
-                        view.showCardPlayed(name, card);
-                    }
+                    view.showCardPlayed(name, card);
 
                     if (model.isWildCard(card)) {
                         if (model.isHumanCurrentPlayer()) {
@@ -186,60 +193,51 @@ public class Main {
                         } else {
                             model.setCalledColor(model.chooseCurrentBotColor());
                         }
-                        if (!quiet) {
-                            view.showColorCalled(name, model.calledColor());
-                        }
+                        view.showColorCalled(name, model.calledColor());
                     }
 
-                    if (model.currentPlayerHasOneCard() && !quiet) {
+                    if (model.currentPlayerHasOneCard()) {
                         view.showUno(name);
                     }
 
                     if (model.currentPlayerHasNoCards()) {
                         int points = model.scoreCurrentPlayerFromOpponents();
-                        if (!quiet) {
-                            view.showWinnerScore(name, points);
-                        }
+                        view.showWinnerScore(name, points);
                         return;
                     }
 
                     InnerModel.TurnEffect effect = model.applyCardEffect(card);
-                    if (!quiet) {
-                        if (effect.type() == InnerModel.EffectType.DRAW_TWO) {
-                            view.showDrawTwoPenalty(effect.playerName());
-                        } else if (effect.type() == InnerModel.EffectType.DRAW_FOUR) {
-                            view.showDrawFourPenalty(effect.playerName());
-                        }
+                    if (effect.type() == InnerModel.EffectType.DRAW_TWO) {
+                        view.showDrawTwoPenalty(effect.playerName());
+                    } else if (effect.type() == InnerModel.EffectType.DRAW_FOUR) {
+                        view.showDrawFourPenalty(effect.playerName());
                     }
                 } else {
                     model.advanceToNextPlayer();
                 }
             }
 
-            if (!quiet) {
-                view.showSafetyLimitReached();
-            }
+            view.showSafetyLimitReached();
         }
 
         private int askHuman() {
             while (true) {
                 view.showChooseCardPrompt();
-                String input = view.readCardChoiceInput();
-                if (input.equals("DRAW")) {
+                PlayerInput.CardChoice choice = view.readCardChoice();
+                if (choice.type() == PlayerInput.CardChoiceType.DRAW) {
                     return -1;
                 }
-                try {
-                    int index = Integer.parseInt(input);
-                    if (index >= 0 && index < model.currentHandSize()) {
-                        return index;
+
+                if (choice.type() == PlayerInput.CardChoiceType.INDEX) {
+                    if (model.isCurrentHandIndex(choice.index())) {
+                        return choice.index();
                     }
-                } catch (Exception ignored) {
-                }
-                for (int i = 0; i < model.currentHandSize(); i++) {
-                    if (model.currentHandCard(i).equals(input)) {
-                        if (model.isLegalForCurrentState(model.currentHandCard(i))) {
-                            return i;
-                        }
+                } else {
+                    InnerModel.CardCodeChoice cardChoice = model.chooseCurrentCardByCode(choice.cardCode());
+                    if (cardChoice.hasLegalMatch()) {
+                        return cardChoice.index();
+                    }
+                    for (int i = 0; i < cardChoice.illegalMatchCount(); i++) {
                         view.showCardNotLegal();
                     }
                 }
@@ -268,6 +266,13 @@ public class Main {
         }
 
         private record TurnEffect(EffectType type, String playerName) {
+        }
+
+        private record CardCodeChoice(int index, int illegalMatchCount) {
+
+            private boolean hasLegalMatch() {
+                return index != -1;
+            }
         }
 
         private final ArrayList<String> deck = new ArrayList<>();
@@ -312,8 +317,16 @@ public class Main {
             return playerNames;
         }
 
+        private ArrayList<String> playerNamesSnapshot() {
+            return new ArrayList<>(playerNames);
+        }
+
         private int[] scores() {
             return scores;
+        }
+
+        private int[] scoresSnapshot() {
+            return scores.clone();
         }
 
         private void clearScores() {
@@ -365,6 +378,10 @@ public class Main {
             return playerNames.size();
         }
 
+        private boolean isPlayerCountValid() {
+            return playerCount() >= 2 && playerCount() <= 4;
+        }
+
         private String currentPlayerName() {
             return playerNames.get(currentPlayer);
         }
@@ -373,12 +390,24 @@ public class Main {
             return humanPlayers.get(currentPlayer);
         }
 
+        private boolean shouldCurrentPlayerAutoPlayDrawnCard(String drawn) {
+            return isLegalForCurrentState(drawn) && !isHumanCurrentPlayer();
+        }
+
+        private boolean shouldAskCurrentPlayerToPlayDrawnCard(String drawn) {
+            return isLegalForCurrentState(drawn) && isHumanCurrentPlayer();
+        }
+
         private ArrayList<String> hand(int player) {
             return hands.get(player);
         }
 
         private ArrayList<String> currentHand() {
             return hand(currentPlayer);
+        }
+
+        private ArrayList<String> currentHandSnapshot() {
+            return new ArrayList<>(currentHand());
         }
 
         private int currentHandSize() {
@@ -401,8 +430,25 @@ public class Main {
             return currentHandSize() - 1;
         }
 
+        private boolean isCurrentHandIndex(int index) {
+            return index >= 0 && index < currentHandSize();
+        }
+
         private boolean isOutsideCurrentHand(int index) {
             return index >= currentHandSize();
+        }
+
+        private CardCodeChoice chooseCurrentCardByCode(String cardCode) {
+            int illegalMatches = 0;
+            for (int i = 0; i < currentHandSize(); i++) {
+                if (currentHandCard(i).equals(cardCode)) {
+                    if (isLegalForCurrentState(currentHandCard(i))) {
+                        return new CardCodeChoice(i, illegalMatches);
+                    }
+                    illegalMatches++;
+                }
+            }
+            return new CardCodeChoice(-1, illegalMatches);
         }
 
         private int chooseCurrentBotCard() {
@@ -752,6 +798,11 @@ public class Main {
     private static class InnerView {
 
         private Scanner scanner = new Scanner(System.in);
+        private boolean quiet = false;
+
+        private void setQuiet(boolean quiet) {
+            this.quiet = quiet;
+        }
 
         private Startup.Input readStartupInput(UiType uiType) {
             if (uiType instanceof UiType.Cli cli) {
@@ -794,6 +845,9 @@ public class Main {
         }
 
         private void showTurn(String playerName, ArrayList<String> hand, String upCard, String calledColor) {
+            if (quiet) {
+                return;
+            }
             System.out.println("\nUp card: " + upCard + (calledColor.isEmpty() ? "" : " called " + calledColor));
             System.out.println(playerName + " hand: " + join(hand));
         }
@@ -810,42 +864,72 @@ public class Main {
         }
 
         private void showCardDrawn(String playerName, String card) {
+            if (quiet) {
+                return;
+            }
             System.out.println(playerName + " draws " + card);
         }
 
         private void showInvalidIndexPenalty(String playerName) {
+            if (quiet) {
+                return;
+            }
             System.out.println(playerName + " selected an invalid index and draws a penalty card.");
         }
 
         private void showIllegalCardPenalty(String playerName, String card) {
+            if (quiet) {
+                return;
+            }
             System.out.println(playerName + " tried illegal card " + card + " and draws a penalty card.");
         }
 
         private void showCardPlayed(String playerName, String card) {
+            if (quiet) {
+                return;
+            }
             System.out.println(playerName + " plays " + card);
         }
 
         private void showColorCalled(String playerName, String color) {
+            if (quiet) {
+                return;
+            }
             System.out.println(playerName + " calls " + color);
         }
 
         private void showUno(String playerName) {
+            if (quiet) {
+                return;
+            }
             System.out.println(playerName + " says UNO!");
         }
 
         private void showWinnerScore(String playerName, int points) {
+            if (quiet) {
+                return;
+            }
             System.out.println(playerName + " wins and scores " + points);
         }
 
         private void showDrawTwoPenalty(String playerName) {
+            if (quiet) {
+                return;
+            }
             System.out.println(playerName + " draws two.");
         }
 
         private void showDrawFourPenalty(String playerName) {
+            if (quiet) {
+                return;
+            }
             System.out.println(playerName + " draws four.");
         }
 
         private void showSafetyLimitReached() {
+            if (quiet) {
+                return;
+            }
             System.out.println("Game stopped at safety limit.");
         }
 
@@ -886,6 +970,9 @@ public class Main {
         }
 
         private void showGameHeader(int gameCount) {
+            if (quiet) {
+                return;
+            }
             System.out.println("\n=== Game " + gameCount + " ===");
         }
 
@@ -896,12 +983,21 @@ public class Main {
             }
         }
 
-        private String readPlayDrawnCardAnswer() {
-            return scanner.nextLine();
+        private boolean readPlayDrawnCardDecision() {
+            String input = scanner.nextLine();
+            return input.equalsIgnoreCase("y") || input.equalsIgnoreCase("yes");
         }
 
-        private String readCardChoiceInput() {
-            return scanner.nextLine().trim().toUpperCase();
+        private PlayerInput.CardChoice readCardChoice() {
+            String input = scanner.nextLine().trim().toUpperCase();
+            if (input.equals("DRAW")) {
+                return PlayerInput.CardChoice.draw();
+            }
+            try {
+                return PlayerInput.CardChoice.index(Integer.parseInt(input));
+            } catch (Exception ignored) {
+                return PlayerInput.CardChoice.cardCode(input);
+            }
         }
 
         private String readColorInput() {
@@ -1060,7 +1156,7 @@ public class Main {
         int chosen = -1;
         String drawn = "R9";
         botHand.add(drawn);
-        if (model.isLegalForCurrentState(drawn) && !model.isHumanCurrentPlayer()) {
+        if (model.shouldCurrentPlayerAutoPlayDrawnCard(drawn)) {
             chosen = botHand.size() - 1;
         }
         passed += check(chosen == 0, "bot auto plays legal drawn card");
@@ -1073,7 +1169,7 @@ public class Main {
         chosen = -1;
         drawn = "B3";
         botHand.add(drawn);
-        if (model.isLegalForCurrentState(drawn) && !model.isHumanCurrentPlayer()) {
+        if (model.shouldCurrentPlayerAutoPlayDrawnCard(drawn)) {
             chosen = botHand.size() - 1;
         }
         passed += check(chosen == -1, "bot keeps illegal drawn card");
@@ -1086,7 +1182,7 @@ public class Main {
         chosen = -1;
         drawn = "R9";
         humanHand.add(drawn);
-        if (model.isLegalForCurrentState(drawn) && !model.isHumanCurrentPlayer()) {
+        if (model.shouldCurrentPlayerAutoPlayDrawnCard(drawn)) {
             chosen = humanHand.size() - 1;
         }
         passed += check(chosen == -1, "human does not auto play drawn card");
