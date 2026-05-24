@@ -7,10 +7,6 @@ import java.util.function.Supplier;
 
 public class Main {
 
-    private static final InnerModel model = new InnerModel();
-    private static final InnerView view = new InnerView();
-    private static final InnerController controller = new InnerController(model, view);
-
     private static class Startup {
 
         private enum Action {
@@ -28,6 +24,9 @@ public class Main {
                 String seed,
                 Action action
         ) {
+        }
+
+        private record Settings(int bots, int games, long seed, boolean human) {
         }
 
         private static Input unsupportedUi() {
@@ -75,7 +74,7 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        controller.startNewGame(new UiType.Cli(args));
+        InnerController.startNewGame(new UiType.Cli(args));
     }
 
     private static class InnerController {
@@ -88,12 +87,45 @@ public class Main {
             this.view = view;
         }
 
-        private void setQuiet(boolean quiet) {
-            view.setQuiet(quiet);
+        private static void startNewGame(UiType uiType) {
+            new InnerController(new InnerModel(), new InnerView()).runNewGame(uiType);
         }
 
-        private void startNewGame(UiType uiType) {
+        private void runNewGame(UiType uiType) {
             Startup.Input startupInput = view.readStartupInput(uiType);
+            view.setQuiet(startupInput.quiet());
+
+            if (handleStartupAction(startupInput.action())) {
+                return;
+            }
+
+            Startup.Settings settings = startupSettings(startupInput);
+            setupGame(settings);
+
+            if (!model.isPlayerCountValid()) {
+                view.showInvalidPlayerCount();
+                return;
+            }
+
+            playGames(settings.games());
+            view.showFinalScores(model.playerNamesSnapshot(), model.scoresSnapshot());
+        }
+
+        private boolean handleStartupAction(Startup.Action action) {
+            if (action == Startup.Action.SELF_TEST) {
+                selfTest();
+                return true;
+            } else if (action == Startup.Action.HELP) {
+                view.showUsage();
+                return true;
+            } else if (action == Startup.Action.UNSUPPORTED_UI) {
+                view.showUnsupportedUiType();
+                return true;
+            }
+            return false;
+        }
+
+        private Startup.Settings startupSettings(Startup.Input startupInput) {
             int bots = 3;
             int games = 1;
             long seed = System.currentTimeMillis();
@@ -107,33 +139,20 @@ public class Main {
             if (startupInput.seed() != null) {
                 seed = Long.parseLong(startupInput.seed());
             }
-            view.setQuiet(startupInput.quiet());
 
-            if (startupInput.action() == Startup.Action.SELF_TEST) {
-                selfTest();
-                return;
-            } else if (startupInput.action() == Startup.Action.HELP) {
-                view.showUsage();
-                return;
-            } else if (startupInput.action() == Startup.Action.UNSUPPORTED_UI) {
-                view.showUnsupportedUiType();
-                return;
-            }
+            return new Startup.Settings(bots, games, seed, startupInput.human());
+        }
 
-            model.seedRandom(seed);
-            model.setupPlayers(bots, startupInput.human());
+        private void setupGame(Startup.Settings settings) {
+            model.seedRandom(settings.seed());
+            model.setupPlayers(settings.bots(), settings.human());
+        }
 
-            if (!model.isPlayerCountValid()) {
-                view.showInvalidPlayerCount();
-                return;
-            }
-
+        private void playGames(int games) {
             for (int gameCount = 1; gameCount <= games; gameCount++) {
                 view.showGameHeader(gameCount);
                 playGame();
             }
-
-            view.showFinalScores(model.playerNamesSnapshot(), model.scoresSnapshot());
         }
 
         private void playGame() {
@@ -146,78 +165,120 @@ public class Main {
 
                 view.showTurn(name, model.currentHandSnapshot(), model.upCard(), model.calledColor());
 
-                int chosen;
+                int chosen = chooseCardForCurrentPlayer();
+                chosen = chooseDrawnCardIfNeeded(chosen, name);
 
-                if (model.isHumanCurrentPlayer()) {
-                    chosen = askHuman();
-                } else {
-                    chosen = model.chooseCurrentBotCard();
-                }
-
-                if (chosen == -1) {
-                    String drawn = model.drawForCurrentPlayer();
-
-                    view.showCardDrawn(name, drawn);
-
-                    if (model.shouldCurrentPlayerAutoPlayDrawnCard(drawn)) {
-                        chosen = model.lastCurrentHandIndex();
-                    } else if (model.shouldAskCurrentPlayerToPlayDrawnCard(drawn)) {
-                        view.showPlayDrawnCardPrompt(drawn);
-                        if (view.readPlayDrawnCardDecision()) {
-                            chosen = model.lastCurrentHandIndex();
-                        }
-                    }
-                }
-
-                if (chosen >= 0) {
-                    if (model.isOutsideCurrentHand(chosen)) {
-                        view.showInvalidIndexPenalty(name);
-                        model.drawPenaltyAndAdvanceCurrentPlayer();
-                        continue;
-                    }
-
-                    String card = model.currentHandCard(chosen);
-
-                    if (!model.isLegalForCurrentState(card)) {
-                        view.showIllegalCardPenalty(name, card);
-                        model.drawPenaltyAndAdvanceCurrentPlayer();
-                        continue;
-                    }
-
-                    model.playCardFromCurrentHand(chosen);
-                    view.showCardPlayed(name, card);
-
-                    if (model.isWildCard(card)) {
-                        if (model.isHumanCurrentPlayer()) {
-                            model.setCalledColor(askColor());
-                        } else {
-                            model.setCalledColor(model.chooseCurrentBotColor());
-                        }
-                        view.showColorCalled(name, model.calledColor());
-                    }
-
-                    if (model.currentPlayerHasOneCard()) {
-                        view.showUno(name);
-                    }
-
-                    if (model.currentPlayerHasNoCards()) {
-                        int points = model.scoreCurrentPlayerFromOpponents();
-                        view.showWinnerScore(name, points);
-                        return;
-                    }
-
-                    InnerModel.TurnEffect effect = model.applyCardEffect(card);
-                    if (effect.type() == InnerModel.EffectType.DRAW_TWO) {
-                        view.showDrawTwoPenalty(effect.playerName());
-                    } else if (effect.type() == InnerModel.EffectType.DRAW_FOUR) {
-                        view.showDrawFourPenalty(effect.playerName());
-                    }
-                } else {
-                    model.advanceToNextPlayer();
+                if (finishTurn(chosen, name)) {
+                    return;
                 }
             }
 
             view.showSafetyLimitReached();
+        }
+
+        private int chooseCardForCurrentPlayer() {
+            if (model.isHumanCurrentPlayer()) {
+                return askHuman();
+            }
+            return model.chooseCurrentBotCard();
+        }
+
+        private int chooseDrawnCardIfNeeded(int chosen, String playerName) {
+            if (chosen != -1) {
+                return chosen;
+            }
+
+            String drawn = model.drawForCurrentPlayer();
+            view.showCardDrawn(playerName, drawn);
+
+            if (model.shouldCurrentPlayerAutoPlayDrawnCard(drawn)) {
+                return model.lastCurrentHandIndex();
+            }
+            if (model.shouldAskCurrentPlayerToPlayDrawnCard(drawn)) {
+                view.showPlayDrawnCardPrompt(drawn);
+                if (view.readPlayDrawnCardDecision()) {
+                    return model.lastCurrentHandIndex();
+                }
+            }
+            return chosen;
+        }
+
+        private boolean finishTurn(int chosen, String playerName) {
+            if (chosen < 0) {
+                model.advanceToNextPlayer();
+                return false;
+            }
+
+            if (penalizeInvalidSelection(chosen, playerName)) {
+                return false;
+            }
+
+            String card = model.currentHandCard(chosen);
+            model.playCardFromCurrentHand(chosen);
+            view.showCardPlayed(playerName, card);
+
+            callColorIfNeeded(card, playerName);
+            showUnoIfNeeded(playerName);
+
+            if (scoreRoundIfFinished(playerName)) {
+                return true;
+            }
+
+            showTurnEffect(model.applyCardEffect(card));
+            return false;
+        }
+
+        private boolean penalizeInvalidSelection(int chosen, String playerName) {
+            if (model.isOutsideCurrentHand(chosen)) {
+                view.showInvalidIndexPenalty(playerName);
+                model.drawPenaltyAndAdvanceCurrentPlayer();
+                return true;
+            }
+
+            String card = model.currentHandCard(chosen);
+            if (!model.isLegalForCurrentState(card)) {
+                view.showIllegalCardPenalty(playerName, card);
+                model.drawPenaltyAndAdvanceCurrentPlayer();
+                return true;
+            }
+            return false;
+        }
+
+        private void callColorIfNeeded(String card, String playerName) {
+            if (!model.isWildCard(card)) {
+                return;
+            }
+
+            if (model.isHumanCurrentPlayer()) {
+                model.setCalledColor(askColor());
+            } else {
+                model.setCalledColor(model.chooseCurrentBotColor());
+            }
+            view.showColorCalled(playerName, model.calledColor());
+        }
+
+        private void showUnoIfNeeded(String playerName) {
+            if (model.currentPlayerHasOneCard()) {
+                view.showUno(playerName);
+            }
+        }
+
+        private boolean scoreRoundIfFinished(String playerName) {
+            if (!model.currentPlayerHasNoCards()) {
+                return false;
+            }
+
+            int points = model.scoreCurrentPlayerFromOpponents();
+            view.showWinnerScore(playerName, points);
+            return true;
+        }
+
+        private void showTurnEffect(InnerModel.TurnEffect effect) {
+            if (effect.type() == InnerModel.EffectType.DRAW_TWO) {
+                view.showDrawTwoPenalty(effect.playerName());
+            } else if (effect.type() == InnerModel.EffectType.DRAW_FOUR) {
+                view.showDrawFourPenalty(effect.playerName());
+            }
         }
 
         private int askHuman() {
@@ -313,16 +374,8 @@ public class Main {
             }
         }
 
-        private ArrayList<String> playerNames() {
-            return playerNames;
-        }
-
         private ArrayList<String> playerNamesSnapshot() {
             return new ArrayList<>(playerNames);
-        }
-
-        private int[] scores() {
-            return scores;
         }
 
         private int[] scoresSnapshot() {
@@ -1016,6 +1069,9 @@ public class Main {
     }
 
     /* TESTS */
+    private static final InnerModel model = new InnerModel();
+    private static final InnerView view = new InnerView();
+    private static final InnerController controller = new InnerController(model, view);
     private static String selfTestCapturedOutput = "";
 
     private static void selfTest() {
@@ -1316,7 +1372,7 @@ public class Main {
 
     private static int selfTestSeededBotGames() {
         int passed = 0;
-        controller.setQuiet(true);
+        view.setQuiet(true);
         model.seedRandom(123);
         model.setupPlayers(3, false);
         model.clearScores();
@@ -1326,7 +1382,7 @@ public class Main {
         passed += check(model.score(0) == 138, "seeded bot games score Bot1");
         passed += check(model.score(1) == 246, "seeded bot games score Bot2");
         passed += check(model.score(2) == 98, "seeded bot games score Bot3");
-        controller.setQuiet(false);
+        view.setQuiet(false);
         return passed;
     }
 
