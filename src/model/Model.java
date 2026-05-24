@@ -415,59 +415,15 @@ public class Model {
     }
 
     public int chooseBotCard(ArrayList<String> hand) {
-        int chosen = chooseFirstLegalCardByRank(hand, "DRAW_TWO");
-        if (chosen != -1) {
-            return chosen;
-        }
-        chosen = chooseFirstLegalCardByRank(hand, "SKIP");
-        if (chosen != -1) {
-            return chosen;
-        }
-        chosen = chooseFirstLegalCardByRank(hand, "NUMBER");
-        if (chosen != -1) {
-            return chosen;
-        }
-        for (int i = 0; i < hand.size(); i++) {
-            if (hand.get(i).startsWith("W")) {
-                return i;
-            }
-        }
-        return -1;
+        return BotStrategy.chooseBotCard(hand, upCard(), calledColor());
     }
 
     public int chooseFirstLegalCardByRank(ArrayList<String> hand, String targetRank) {
-        for (int i = 0; i < hand.size(); i++) {
-            String card = hand.get(i);
-            if (rank(card).equals(targetRank) && isLegalForCurrentState(card)) {
-                return i;
-            }
-        }
-        return -1;
+        return BotStrategy.chooseFirstLegalCardByRank(hand, targetRank, upCard(), calledColor());
     }
 
     public String chooseBotColor(ArrayList<String> hand) {
-        int r = 0;
-        int y = 0;
-        int g = 0;
-        int b = 0;
-        for (String s : hand) {
-            String c = color(s);
-            switch (c) {
-                case "R" -> r++;
-                case "Y" -> y++;
-                case "G" -> g++;
-                case "B" -> b++;
-            }
-        }
-        if (r >= y && r >= g && r >= b) {
-            return "R";
-        } else if (y >= r && y >= g && y >= b) {
-            return "Y";
-        } else if (g >= r && g >= y && g >= b) {
-            return "G";
-        } else {
-            return "B";
-        }
+        return BotStrategy.chooseBotColor(hand);
     }
 
     public String color(String card) {
