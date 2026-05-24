@@ -2,7 +2,6 @@ package model;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Random;
 
 public class Model {
@@ -23,8 +22,7 @@ public class Model {
         }
     }
 
-    private final ArrayList<String> deck = new ArrayList<>();
-    private final ArrayList<String> discard = new ArrayList<>();
+    private final DrawPile drawPile = new DrawPile();
     private final ArrayList<ArrayList<String>> hands = new ArrayList<>();
     private final ArrayList<String> playerNames = new ArrayList<>();
     private final ArrayList<Boolean> humanPlayers = new ArrayList<>();
@@ -236,27 +234,7 @@ public class Model {
     }
 
     public void buildDeck() {
-        clearDeck();
-
-        String[] colors = {"R", "Y", "G", "B"};
-        for (String color : colors) {
-            addToDeck(color + "0");
-            for (int n = 1; n <= 9; n++) {
-                addToDeck(color + n);
-                addToDeck(color + n);
-            }
-            addToDeck(color + "S");
-            addToDeck(color + "S");
-            addToDeck(color + "R");
-            addToDeck(color + "R");
-            addToDeck(color + "+2");
-            addToDeck(color + "+2");
-        }
-
-        for (int i = 0; i < 4; i++) {
-            addToDeck("W");
-            addToDeck("W4");
-        }
+        drawPile.buildDeck();
     }
 
     public void dealInitialHands() {
@@ -357,49 +335,39 @@ public class Model {
     }
 
     public void clearDeck() {
-        deck.clear();
+        drawPile.clearDeck();
     }
 
     public void addToDeck(String card) {
-        deck.add(card);
+        drawPile.addToDeck(card);
     }
 
     public void shuffleDeck() {
-        Collections.shuffle(deck, random);
+        drawPile.shuffleDeck(random);
     }
 
     public void clearDiscard() {
-        discard.clear();
+        drawPile.clearDiscard();
     }
 
     public void discard(String card) {
-        discard.add(card);
+        drawPile.discard(card);
     }
 
     public int deckSize() {
-        return deck.size();
+        return drawPile.deckSize();
     }
 
     public String firstDeckCard() {
-        return deck.getFirst();
+        return drawPile.firstDeckCard();
     }
 
     public boolean isDiscardEmpty() {
-        return discard.isEmpty();
+        return drawPile.isDiscardEmpty();
     }
 
     public String draw() {
-        if (deck.isEmpty()) {
-            deck.addAll(discard);
-            discard.clear();
-            Collections.shuffle(deck, random);
-        }
-
-        if (deck.isEmpty()) {
-            return "W";
-        }
-
-        return deck.removeFirst();
+        return drawPile.draw(random);
     }
 
     public boolean isLegal(String card, String up, String call) {
