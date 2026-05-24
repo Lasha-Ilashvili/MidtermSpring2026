@@ -60,16 +60,7 @@ public class Model {
     }
 
     public int scoreCurrentPlayerFromOpponents() {
-        int points = 0;
-        for (int i = 0; i < playerCount(); i++) {
-            if (i != currentPlayer()) {
-                for (int j = 0; j < hand(i).size(); j++) {
-                    points += points(hand(i).get(j));
-                }
-            }
-        }
-        addScore(currentPlayer(), points);
-        return points;
+        return players.scoreFromOpponents(currentPlayer());
     }
 
     public String upCard() {

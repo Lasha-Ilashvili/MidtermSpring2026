@@ -48,6 +48,19 @@ final class Players {
         scores[player] += points;
     }
 
+    int scoreFromOpponents(int winner) {
+        int points = 0;
+        for (int i = 0; i < count(); i++) {
+            if (i != winner) {
+                for (int j = 0; j < hand(i).size(); j++) {
+                    points += CardRules.points(hand(i).get(j));
+                }
+            }
+        }
+        addScore(winner, points);
+        return points;
+    }
+
     int count() {
         return playerNames.size();
     }
