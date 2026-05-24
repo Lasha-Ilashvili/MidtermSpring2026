@@ -23,11 +23,10 @@ public class Model {
 
     private final DrawPile drawPile = new DrawPile();
     private final Players players = new Players();
+    private final TurnOrder turnOrder = new TurnOrder();
     private String upCard = "";
     private String calledColor = "";
     private Random random = new Random();
-    private int currentPlayer = 0;
-    private int direction = 1;
 
     public void seedRandom(long seed) {
         random = new Random(seed);
@@ -103,11 +102,11 @@ public class Model {
     }
 
     public String currentPlayerName() {
-        return players.name(currentPlayer);
+        return players.name(currentPlayer());
     }
 
     public boolean isHumanCurrentPlayer() {
-        return players.isHuman(currentPlayer);
+        return players.isHuman(currentPlayer());
     }
 
     public boolean shouldCurrentPlayerAutoPlayDrawnCard(String drawn) {
@@ -123,7 +122,7 @@ public class Model {
     }
 
     public ArrayList<String> currentHand() {
-        return hand(currentPlayer);
+        return hand(currentPlayer());
     }
 
     public ArrayList<String> currentHandSnapshot() {
@@ -238,7 +237,7 @@ public class Model {
     }
 
     public void chooseRandomCurrentPlayer(int playerCount) {
-        currentPlayer = randomPlayerIndex(playerCount);
+        turnOrder.setCurrentPlayer(randomPlayerIndex(playerCount));
     }
 
     public void advanceToNextPlayer() {
@@ -246,37 +245,31 @@ public class Model {
     }
 
     public int currentPlayer() {
-        return currentPlayer;
+        return turnOrder.currentPlayer();
     }
 
     public int direction() {
-        return direction;
+        return turnOrder.direction();
     }
 
     public void setCurrentPlayer(int currentPlayer) {
-        this.currentPlayer = currentPlayer;
+        turnOrder.setCurrentPlayer(currentPlayer);
     }
 
     public void setDirection(int direction) {
-        this.direction = direction;
+        turnOrder.setDirection(direction);
     }
 
     public void resetTurnOrder() {
-        direction = 1;
+        turnOrder.reset();
     }
 
     public void reverseDirection() {
-        direction = direction * -1;
+        turnOrder.reverseDirection();
     }
 
     public void next(int playerCount) {
-        currentPlayer += direction;
-        if (currentPlayer >= playerCount) {
-            currentPlayer = 0;
-        }
-        if (currentPlayer < 0) {
-            currentPlayer = playerCount - 1;
-        }
+        turnOrder.next(playerCount);
     }
 
     public TurnEffect applyCardEffect(String card) {
