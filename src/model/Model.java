@@ -1,7 +1,6 @@
 package model;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 public class Model {
@@ -23,10 +22,7 @@ public class Model {
     }
 
     private final DrawPile drawPile = new DrawPile();
-    private final ArrayList<ArrayList<String>> hands = new ArrayList<>();
-    private final ArrayList<String> playerNames = new ArrayList<>();
-    private final ArrayList<Boolean> humanPlayers = new ArrayList<>();
-    private final int[] scores = new int[10];
+    private final Players players = new Players();
     private String upCard = "";
     private String calledColor = "";
     private Random random = new Random();
@@ -42,41 +38,27 @@ public class Model {
     }
 
     public void setupPlayers(int bots, boolean human) {
-        playerNames.clear();
-        humanPlayers.clear();
-        hands.clear();
-
-        if (human) {
-            playerNames.add("You");
-            humanPlayers.add(Boolean.TRUE);
-            hands.add(new ArrayList<>());
-        }
-
-        for (int i = 1; i <= bots; i++) {
-            playerNames.add("Bot" + i);
-            humanPlayers.add(Boolean.FALSE);
-            hands.add(new ArrayList<>());
-        }
+        players.setup(bots, human);
     }
 
     public ArrayList<String> playerNamesSnapshot() {
-        return new ArrayList<>(playerNames);
+        return players.namesSnapshot();
     }
 
     public int[] scoresSnapshot() {
-        return scores.clone();
+        return players.scoresSnapshot();
     }
 
     public void clearScores() {
-        Arrays.fill(scores, 0);
+        players.clearScores();
     }
 
     public int score(int player) {
-        return scores[player];
+        return players.score(player);
     }
 
     public void addScore(int player, int points) {
-        scores[player] += points;
+        players.addScore(player, points);
     }
 
     public int scoreCurrentPlayerFromOpponents() {
@@ -113,7 +95,7 @@ public class Model {
     }
 
     public int playerCount() {
-        return playerNames.size();
+        return players.count();
     }
 
     public boolean isPlayerCountValid() {
@@ -121,11 +103,11 @@ public class Model {
     }
 
     public String currentPlayerName() {
-        return playerNames.get(currentPlayer);
+        return players.name(currentPlayer);
     }
 
     public boolean isHumanCurrentPlayer() {
-        return humanPlayers.get(currentPlayer);
+        return players.isHuman(currentPlayer);
     }
 
     public boolean shouldCurrentPlayerAutoPlayDrawnCard(String drawn) {
@@ -137,7 +119,7 @@ public class Model {
     }
 
     public ArrayList<String> hand(int player) {
-        return hands.get(player);
+        return players.hand(player);
     }
 
     public ArrayList<String> currentHand() {
@@ -216,9 +198,7 @@ public class Model {
     }
 
     public void clearHands() {
-        for (ArrayList<String> hand : hands) {
-            hand.clear();
-        }
+        players.clearHands();
     }
 
     public void startRound() {
