@@ -4,7 +4,8 @@ import model.Model;
 import ui.PlayerInput;
 import ui.Startup;
 import ui.UiType;
-import ui.cli.CLIEngine;
+import ui.UiView;
+import ui.UiViewFactory;
 
 public class Controller {
 
@@ -12,15 +13,15 @@ public class Controller {
     }
 
     private final Model model;
-    private final CLIEngine view;
+    private final UiView view;
 
-    Controller(Model model, CLIEngine view) {
+    Controller(Model model, UiView view) {
         this.model = model;
         this.view = view;
     }
 
     public static void startNewGame(UiType uiType) {
-        new Controller(new Model(), new CLIEngine()).runNewGame(uiType);
+        new Controller(new Model(), UiViewFactory.create(uiType)).runNewGame(uiType);
     }
 
     void runNewGame(UiType uiType) {
