@@ -40,7 +40,7 @@ public class Model {
     }
 
     public boolean isPlayableColor(String color) {
-        return color.equals("R") || color.equals("Y") || color.equals("G") || color.equals("B");
+        return CardRules.isPlayableColor(color);
     }
 
     public void setupPlayers(int bots, boolean human) {
@@ -403,19 +403,7 @@ public class Model {
     }
 
     public boolean isLegal(String card, String up, String call) {
-        if (card.startsWith("W")) {
-            return true;
-        }
-        if (color(card).equals(color(up))) {
-            return true;
-        }
-        if (!call.isEmpty() && color(card).equals(call)) {
-            return true;
-        }
-        if (rank(card).equals(rank(up)) && !rank(card).equals("NUMBER")) {
-            return true;
-        }
-        return rank(card).equals("NUMBER") && rank(up).equals("NUMBER") && number(card) == number(up);
+        return CardRules.isLegal(card, up, call);
     }
 
     public boolean isLegalForCurrentState(String card) {
@@ -423,7 +411,7 @@ public class Model {
     }
 
     public boolean isWildCard(String card) {
-        return card.equals("W") || card.equals("W4");
+        return CardRules.isWildCard(card);
     }
 
     public int chooseBotCard(ArrayList<String> hand) {
@@ -483,54 +471,18 @@ public class Model {
     }
 
     public String color(String card) {
-        if (card.startsWith("R")) {
-            return "R";
-        }
-        if (card.startsWith("Y")) {
-            return "Y";
-        }
-        if (card.startsWith("G")) {
-            return "G";
-        }
-        if (card.startsWith("B")) {
-            return "B";
-        }
-        return "";
+        return CardRules.color(card);
     }
 
     public String rank(String card) {
-        if (card.equals("W")) {
-            return "WILD";
-        }
-        if (card.equals("W4")) {
-            return "WILD_DRAW_FOUR";
-        }
-        if (card.endsWith("S")) {
-            return "SKIP";
-        }
-        if (card.endsWith("R")) {
-            return "REVERSE";
-        }
-        if (card.endsWith("+2")) {
-            return "DRAW_TWO";
-        }
-        return "NUMBER";
+        return CardRules.rank(card);
     }
 
     public int number(String card) {
-        if (rank(card).equals("NUMBER")) {
-            return Integer.parseInt(card.substring(1));
-        }
-        return -1;
+        return CardRules.number(card);
     }
 
     public int points(String card) {
-        String r = rank(card);
-        return switch (r) {
-            case "NUMBER" -> number(card);
-            case "SKIP", "REVERSE", "DRAW_TWO" -> 20;
-            case "WILD", "WILD_DRAW_FOUR" -> 50;
-            default -> 0;
-        };
+        return CardRules.points(card);
     }
 }
