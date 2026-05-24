@@ -1,5 +1,6 @@
 package ui.cli;
 
+import java.util.Objects;
 import java.util.Scanner;
 import model.Model;
 import ui.UIEngine;
@@ -7,14 +8,16 @@ import ui.UiEvent;
 
 public class CLIEngine implements UIEngine {
 
+    private final String[] args;
     private final Scanner scanner;
 
-    public CLIEngine() {
-        this(new Scanner(System.in));
+    public CLIEngine(String[] args) {
+        this(args, new Scanner(System.in));
     }
 
-    CLIEngine(Scanner scanner) {
-        this.scanner = scanner;
+    CLIEngine(String[] args, Scanner scanner) {
+        this.args = Objects.requireNonNull(args).clone();
+        this.scanner = Objects.requireNonNull(scanner);
     }
 
     @Override

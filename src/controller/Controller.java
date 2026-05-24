@@ -13,7 +13,7 @@ public class Controller {
 
     public static void startNewGame(UiType uiType) {
         UIEngine uiEngine = switch (uiType) {
-            case CLI -> new CLIEngine();
+            case UiType.Cli cli -> new CLIEngine(cli.args());
         };
 
         new Controller(uiEngine, new Model()).startGame();
@@ -27,7 +27,8 @@ public class Controller {
     private void startGame() {
         uiEngine.onInit();
 
-        while (true) {
+        boolean isRunning = true;
+        while (isRunning) {
             uiEngine.onDraw(model);
 
             // TODO: If game ends break

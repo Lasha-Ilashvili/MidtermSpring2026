@@ -12,36 +12,75 @@ public class Main {
 
     private static boolean quiet = false;
 
+    private static class Startup {
+
+        private enum Action {
+            START_GAME,
+            SELF_TEST,
+            HELP,
+            UNSUPPORTED_UI
+        }
+
+        private record Input(
+                String bots,
+                String games,
+                boolean human,
+                boolean quiet,
+                String seed,
+                Action action
+        ) {
+        }
+
+        private static Input unsupportedUi() {
+            return new Input(null, null, false, false, null, Action.UNSUPPORTED_UI);
+        }
+    }
+
+    private sealed interface UiType permits UiType.Cli {
+
+        record Cli(String[] args) implements UiType {
+
+            public Cli {
+                args = Objects.requireNonNull(args).clone();
+            }
+
+            @Override
+            public String[] args() {
+                return args.clone();
+            }
+        }
+    }
+
     public static void main(String[] args) {
+        Startup.Input startupInput = view.readStartupInput(new UiType.Cli(args));
         int bots = 3;
         int games = 1;
-        boolean human = false;
         long seed = System.currentTimeMillis();
 
-        for (int i = 0; i < args.length; i++) {
-            boolean isSecondLast = i + 1 < args.length;
+        if (startupInput.bots() != null) {
+            bots = Integer.parseInt(startupInput.bots());
+        }
+        if (startupInput.games() != null) {
+            games = Integer.parseInt(startupInput.games());
+        }
+        if (startupInput.seed() != null) {
+            seed = Long.parseLong(startupInput.seed());
+        }
+        quiet = startupInput.quiet();
 
-            if (args[i].equals("--bots") && isSecondLast) {
-                bots = Integer.parseInt(args[++i]);
-            } else if (args[i].equals("--games") && isSecondLast) {
-                games = Integer.parseInt(args[++i]);
-            } else if (args[i].equals("--human")) {
-                human = true;
-            } else if (args[i].equals("--quiet")) {
-                quiet = true;
-            } else if (args[i].equals("--seed") && isSecondLast) {
-                seed = Long.parseLong(args[++i]);
-            } else if (args[i].equals("--self-test")) {
-                selfTest();
-                return;
-            } else if (args[i].equals("--help")) {
-                view.showUsage();
-                return;
-            }
+        if (startupInput.action() == Startup.Action.SELF_TEST) {
+            selfTest();
+            return;
+        } else if (startupInput.action() == Startup.Action.HELP) {
+            view.showUsage();
+            return;
+        } else if (startupInput.action() == Startup.Action.UNSUPPORTED_UI) {
+            view.showUnsupportedUiType();
+            return;
         }
 
         model.seedRandom(seed);
-        model.setupPlayers(bots, human);
+        model.setupPlayers(bots, startupInput.human());
 
         if (model.playerCount() < 2 || model.playerCount() > 4) {
             view.showInvalidPlayerCount();
@@ -716,6 +755,46 @@ public class Main {
 
         private Scanner scanner = new Scanner(System.in);
 
+        private Startup.Input readStartupInput(UiType uiType) {
+            if (uiType instanceof UiType.Cli cli) {
+                return readCliStartupInput(cli.args());
+            }
+            return Startup.unsupportedUi();
+        }
+
+        private Startup.Input readCliStartupInput(String[] args) {
+            String bots = null;
+            String games = null;
+            boolean human = false;
+            boolean isQuiet = false;
+            String seed = null;
+            Startup.Action action = Startup.Action.START_GAME;
+
+            for (int i = 0; i < args.length; i++) {
+                boolean hasNext = i + 1 < args.length;
+
+                if (args[i].equals("--bots") && hasNext) {
+                    bots = args[++i];
+                } else if (args[i].equals("--games") && hasNext) {
+                    games = args[++i];
+                } else if (args[i].equals("--human")) {
+                    human = true;
+                } else if (args[i].equals("--quiet")) {
+                    isQuiet = true;
+                } else if (args[i].equals("--seed") && hasNext) {
+                    seed = args[++i];
+                } else if (args[i].equals("--self-test")) {
+                    action = Startup.Action.SELF_TEST;
+                    break;
+                } else if (args[i].equals("--help")) {
+                    action = Startup.Action.HELP;
+                    break;
+                }
+            }
+
+            return new Startup.Input(bots, games, human, isQuiet, seed, action);
+        }
+
         private void showTurn(String playerName, ArrayList<String> hand, String upCard, String calledColor) {
             System.out.println("\nUp card: " + upCard + (calledColor.isEmpty() ? "" : " called " + calledColor));
             System.out.println(playerName + " hand: " + join(hand));
@@ -802,6 +881,10 @@ public class Main {
 
         private void showInvalidPlayerCount() {
             System.out.println("UNO needs 2 to 4 players.");
+        }
+
+        private void showUnsupportedUiType() {
+            System.out.println("Unsupported UI type.");
         }
 
         private void showGameHeader(int gameCount) {
