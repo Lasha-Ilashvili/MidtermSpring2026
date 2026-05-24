@@ -24,8 +24,7 @@ public class Model {
     private final DrawPile drawPile = new DrawPile();
     private final Players players = new Players();
     private final TurnOrder turnOrder = new TurnOrder();
-    private String upCard = "";
-    private String calledColor = "";
+    private final PlayArea playArea = new PlayArea();
     private Random random = new Random();
 
     public void seedRandom(long seed) {
@@ -74,23 +73,23 @@ public class Model {
     }
 
     public String upCard() {
-        return upCard;
+        return playArea.upCard();
     }
 
     public void setUpCard(String upCard) {
-        this.upCard = upCard;
+        playArea.setUpCard(upCard);
     }
 
     public String calledColor() {
-        return calledColor;
+        return playArea.calledColor();
     }
 
     public void setCalledColor(String calledColor) {
-        this.calledColor = calledColor;
+        playArea.setCalledColor(calledColor);
     }
 
     public void clearCalledColor() {
-        calledColor = "";
+        playArea.clearCalledColor();
     }
 
     public int playerCount() {
