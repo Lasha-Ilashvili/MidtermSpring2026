@@ -9,8 +9,7 @@ public class Main {
 
     private static final InnerModel model = new InnerModel();
     private static final InnerView view = new InnerView();
-
-    private static boolean quiet = false;
+    private static final InnerController controller = new InnerController(model, view);
 
     private static class Startup {
 
@@ -52,202 +51,211 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        Startup.Input startupInput = view.readStartupInput(new UiType.Cli(args));
-        int bots = 3;
-        int games = 1;
-        long seed = System.currentTimeMillis();
-
-        if (startupInput.bots() != null) {
-            bots = Integer.parseInt(startupInput.bots());
-        }
-        if (startupInput.games() != null) {
-            games = Integer.parseInt(startupInput.games());
-        }
-        if (startupInput.seed() != null) {
-            seed = Long.parseLong(startupInput.seed());
-        }
-        quiet = startupInput.quiet();
-
-        if (startupInput.action() == Startup.Action.SELF_TEST) {
-            selfTest();
-            return;
-        } else if (startupInput.action() == Startup.Action.HELP) {
-            view.showUsage();
-            return;
-        } else if (startupInput.action() == Startup.Action.UNSUPPORTED_UI) {
-            view.showUnsupportedUiType();
-            return;
-        }
-
-        model.seedRandom(seed);
-        model.setupPlayers(bots, startupInput.human());
-
-        if (model.playerCount() < 2 || model.playerCount() > 4) {
-            view.showInvalidPlayerCount();
-            return;
-        }
-
-        for (int gameCount = 1; gameCount <= games; gameCount++) {
-            if (!quiet) {
-                view.showGameHeader(gameCount);
-            }
-            playGame();
-        }
-
-        view.showFinalScores(model.playerNames(), model.scores());
+        controller.startNewGame(new UiType.Cli(args));
     }
 
-    private static void playGame() {
-        model.startRound();
+    private static class InnerController {
 
-        int guard = 0;
-        while (guard < 3000) {
-            guard++;
-            String name = model.currentPlayerName();
+        private final InnerModel model;
+        private final InnerView view;
+        private boolean quiet = false;
 
-            if (!quiet) {
-                view.showTurn(name, model.currentHand(), model.upCard(), model.calledColor());
+        private InnerController(InnerModel model, InnerView view) {
+            this.model = model;
+            this.view = view;
+        }
+
+        private void setQuiet(boolean quiet) {
+            this.quiet = quiet;
+        }
+
+        private void startNewGame(UiType uiType) {
+            Startup.Input startupInput = view.readStartupInput(uiType);
+            int bots = 3;
+            int games = 1;
+            long seed = System.currentTimeMillis();
+
+            if (startupInput.bots() != null) {
+                bots = Integer.parseInt(startupInput.bots());
+            }
+            if (startupInput.games() != null) {
+                games = Integer.parseInt(startupInput.games());
+            }
+            if (startupInput.seed() != null) {
+                seed = Long.parseLong(startupInput.seed());
+            }
+            quiet = startupInput.quiet();
+
+            if (startupInput.action() == Startup.Action.SELF_TEST) {
+                selfTest();
+                return;
+            } else if (startupInput.action() == Startup.Action.HELP) {
+                view.showUsage();
+                return;
+            } else if (startupInput.action() == Startup.Action.UNSUPPORTED_UI) {
+                view.showUnsupportedUiType();
+                return;
             }
 
-            int chosen;
+            model.seedRandom(seed);
+            model.setupPlayers(bots, startupInput.human());
 
-            if (model.isHumanCurrentPlayer()) {
-                chosen = askHuman();
-            } else {
-                chosen = model.chooseCurrentBotCard();
+            if (model.playerCount() < 2 || model.playerCount() > 4) {
+                view.showInvalidPlayerCount();
+                return;
             }
 
-            if (chosen == -1) {
-                String drawn = model.drawForCurrentPlayer();
+            for (int gameCount = 1; gameCount <= games; gameCount++) {
+                if (!quiet) {
+                    view.showGameHeader(gameCount);
+                }
+                playGame();
+            }
+
+            view.showFinalScores(model.playerNames(), model.scores());
+        }
+
+        private void playGame() {
+            model.startRound();
+
+            int guard = 0;
+            while (guard < 3000) {
+                guard++;
+                String name = model.currentPlayerName();
 
                 if (!quiet) {
-                    view.showCardDrawn(name, drawn);
+                    view.showTurn(name, model.currentHand(), model.upCard(), model.calledColor());
                 }
 
-                if (model.isLegalForCurrentState(drawn)) {
-                    if (!model.isHumanCurrentPlayer()) {
-                        chosen = model.lastCurrentHandIndex();
-                    } else {
-                        view.showPlayDrawnCardPrompt(drawn);
-                        String answer = view.readPlayDrawnCardAnswer();
+                int chosen;
 
-                        if (answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes")) {
+                if (model.isHumanCurrentPlayer()) {
+                    chosen = askHuman();
+                } else {
+                    chosen = model.chooseCurrentBotCard();
+                }
+
+                if (chosen == -1) {
+                    String drawn = model.drawForCurrentPlayer();
+
+                    if (!quiet) {
+                        view.showCardDrawn(name, drawn);
+                    }
+
+                    if (model.isLegalForCurrentState(drawn)) {
+                        if (!model.isHumanCurrentPlayer()) {
                             chosen = model.lastCurrentHandIndex();
+                        } else {
+                            view.showPlayDrawnCardPrompt(drawn);
+                            String answer = view.readPlayDrawnCardAnswer();
+
+                            if (answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes")) {
+                                chosen = model.lastCurrentHandIndex();
+                            }
                         }
                     }
                 }
+
+                if (chosen >= 0) {
+                    if (model.isOutsideCurrentHand(chosen)) {
+                        if (!quiet) {
+                            view.showInvalidIndexPenalty(name);
+                        }
+                        model.drawPenaltyAndAdvanceCurrentPlayer();
+                        continue;
+                    }
+
+                    String card = model.currentHandCard(chosen);
+
+                    if (!model.isLegalForCurrentState(card)) {
+                        if (!quiet) {
+                            view.showIllegalCardPenalty(name, card);
+                        }
+                        model.drawPenaltyAndAdvanceCurrentPlayer();
+                        continue;
+                    }
+
+                    model.playCardFromCurrentHand(chosen);
+                    if (!quiet) {
+                        view.showCardPlayed(name, card);
+                    }
+
+                    if (model.isWildCard(card)) {
+                        if (model.isHumanCurrentPlayer()) {
+                            model.setCalledColor(askColor());
+                        } else {
+                            model.setCalledColor(model.chooseCurrentBotColor());
+                        }
+                        if (!quiet) {
+                            view.showColorCalled(name, model.calledColor());
+                        }
+                    }
+
+                    if (model.currentPlayerHasOneCard() && !quiet) {
+                        view.showUno(name);
+                    }
+
+                    if (model.currentPlayerHasNoCards()) {
+                        int points = model.scoreCurrentPlayerFromOpponents();
+                        if (!quiet) {
+                            view.showWinnerScore(name, points);
+                        }
+                        return;
+                    }
+
+                    InnerModel.TurnEffect effect = model.applyCardEffect(card);
+                    if (!quiet) {
+                        if (effect.type() == InnerModel.EffectType.DRAW_TWO) {
+                            view.showDrawTwoPenalty(effect.playerName());
+                        } else if (effect.type() == InnerModel.EffectType.DRAW_FOUR) {
+                            view.showDrawFourPenalty(effect.playerName());
+                        }
+                    }
+                } else {
+                    model.advanceToNextPlayer();
+                }
             }
 
-            if (chosen >= 0) {
-                if (model.isOutsideCurrentHand(chosen)) {
-                    if (!quiet) {
-                        view.showInvalidIndexPenalty(name);
-                    }
-                    model.drawPenaltyAndAdvanceCurrentPlayer();
-                    continue;
-                }
-
-                String card = model.currentHandCard(chosen);
-
-                if (!model.isLegalForCurrentState(card)) {
-                    if (!quiet) {
-                        view.showIllegalCardPenalty(name, card);
-                    }
-                    model.drawPenaltyAndAdvanceCurrentPlayer();
-                    continue;
-                }
-
-                model.playCardFromCurrentHand(chosen);
-                if (!quiet) {
-                    view.showCardPlayed(name, card);
-                }
-
-                if (model.isWildCard(card)) {
-                    if (model.isHumanCurrentPlayer()) {
-                        model.setCalledColor(askColor());
-                    } else {
-                        model.setCalledColor(model.chooseCurrentBotColor());
-                    }
-                    if (!quiet) {
-                        view.showColorCalled(name, model.calledColor());
-                    }
-                }
-
-                if (model.currentPlayerHasOneCard() && !quiet) {
-                    view.showUno(name);
-                }
-
-                if (model.currentPlayerHasNoCards()) {
-                    int points = model.scoreCurrentPlayerFromOpponents();
-                    if (!quiet) {
-                        view.showWinnerScore(name, points);
-                    }
-                    return;
-                }
-
-                InnerModel.TurnEffect effect = model.applyCardEffect(card);
-                if (!quiet) {
-                    if (effect.type() == InnerModel.EffectType.DRAW_TWO) {
-                        view.showDrawTwoPenalty(effect.playerName());
-                    } else if (effect.type() == InnerModel.EffectType.DRAW_FOUR) {
-                        view.showDrawFourPenalty(effect.playerName());
-                    }
-                }
-            } else {
-                model.advanceToNextPlayer();
+            if (!quiet) {
+                view.showSafetyLimitReached();
             }
         }
 
-        if (!quiet) {
-            view.showSafetyLimitReached();
-        }
-    }
-
-    private static int askHuman() {
-        while (true) {
-            view.showChooseCardPrompt();
-            String input = view.readCardChoiceInput();
-            if (input.equals("DRAW")) {
-                return -1;
-            }
-            try {
-                int index = Integer.parseInt(input);
-                if (index >= 0 && index < model.currentHandSize()) {
-                    return index;
+        private int askHuman() {
+            while (true) {
+                view.showChooseCardPrompt();
+                String input = view.readCardChoiceInput();
+                if (input.equals("DRAW")) {
+                    return -1;
                 }
-            } catch (Exception ignored) {
-            }
-            for (int i = 0; i < model.currentHandSize(); i++) {
-                if (model.currentHandCard(i).equals(input)) {
-                    if (model.isLegalForCurrentState(model.currentHandCard(i))) {
-                        return i;
+                try {
+                    int index = Integer.parseInt(input);
+                    if (index >= 0 && index < model.currentHandSize()) {
+                        return index;
                     }
-                    view.showCardNotLegal();
+                } catch (Exception ignored) {
                 }
+                for (int i = 0; i < model.currentHandSize(); i++) {
+                    if (model.currentHandCard(i).equals(input)) {
+                        if (model.isLegalForCurrentState(model.currentHandCard(i))) {
+                            return i;
+                        }
+                        view.showCardNotLegal();
+                    }
+                }
+                view.showCardNotFound();
             }
-            view.showCardNotFound();
         }
-    }
 
-    private static String askColor() {
-        while (true) {
-            view.showCallColorPrompt();
-            String input = view.readColorInput();
-            switch (input) {
-                case "R" -> {
-                    return "R";
+        private String askColor() {
+            while (true) {
+                view.showCallColorPrompt();
+                String input = view.readColorInput();
+                if (model.isPlayableColor(input)) {
+                    return input;
                 }
-                case "Y" -> {
-                    return "Y";
-                }
-                case "G" -> {
-                    return "G";
-                }
-                case "B" -> {
-                    return "B";
-                }
+                view.showBadColor();
             }
-            view.showBadColor();
         }
     }
 
@@ -276,6 +284,10 @@ public class Main {
 
         private void seedRandom(long seed) {
             random = new Random(seed);
+        }
+
+        private boolean isPlayableColor(String color) {
+            return color.equals("R") || color.equals("Y") || color.equals("G") || color.equals("B");
         }
 
         private void setupPlayers(int bots, boolean human) {
@@ -629,44 +641,30 @@ public class Main {
         }
 
         private int chooseBotCard(ArrayList<String> hand) {
-            for (int i = 0; i < hand.size(); i++) {
-                String card = hand.get(i);
-                boolean ok = false;
-                if (card.startsWith("W")) ok = true;
-                else if (color(card).equals(color(upCard()))) ok = true;
-                else if (!calledColor().isEmpty() && color(card).equals(calledColor())) ok = true;
-                else if (rank(card).equals(rank(upCard())) && !rank(card).equals("NUMBER")) ok = true;
-                else if (rank(card).equals("NUMBER") && rank(upCard()).equals("NUMBER") && number(card) == number(upCard())) ok = true;
-                if (rank(card).equals("DRAW_TWO") && ok) {
-                    return i;
-                }
+            int chosen = chooseFirstLegalCardByRank(hand, "DRAW_TWO");
+            if (chosen != -1) {
+                return chosen;
             }
-            for (int i = 0; i < hand.size(); i++) {
-                String card = hand.get(i);
-                boolean ok = false;
-                if (card.startsWith("W")) ok = true;
-                else if (color(card).equals(color(upCard()))) ok = true;
-                else if (!calledColor().isEmpty() && color(card).equals(calledColor())) ok = true;
-                else if (rank(card).equals(rank(upCard())) && !rank(card).equals("NUMBER")) ok = true;
-                else if (rank(card).equals("NUMBER") && rank(upCard()).equals("NUMBER") && number(card) == number(upCard())) ok = true;
-                if (rank(card).equals("SKIP") && ok) {
-                    return i;
-                }
+            chosen = chooseFirstLegalCardByRank(hand, "SKIP");
+            if (chosen != -1) {
+                return chosen;
             }
-            for (int i = 0; i < hand.size(); i++) {
-                String card = hand.get(i);
-                boolean ok = false;
-                if (card.startsWith("W")) ok = true;
-                else if (color(card).equals(color(upCard()))) ok = true;
-                else if (!calledColor().isEmpty() && color(card).equals(calledColor())) ok = true;
-                else if (rank(card).equals(rank(upCard())) && !rank(card).equals("NUMBER")) ok = true;
-                else if (rank(card).equals("NUMBER") && rank(upCard()).equals("NUMBER") && number(card) == number(upCard())) ok = true;
-                if (rank(card).equals("NUMBER") && ok) {
-                    return i;
-                }
+            chosen = chooseFirstLegalCardByRank(hand, "NUMBER");
+            if (chosen != -1) {
+                return chosen;
             }
             for (int i = 0; i < hand.size(); i++) {
                 if (hand.get(i).startsWith("W")) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private int chooseFirstLegalCardByRank(ArrayList<String> hand, String targetRank) {
+            for (int i = 0; i < hand.size(); i++) {
+                String card = hand.get(i);
+                if (rank(card).equals(targetRank) && isLegalForCurrentState(card)) {
                     return i;
                 }
             }
@@ -1222,17 +1220,17 @@ public class Main {
 
     private static int selfTestSeededBotGames() {
         int passed = 0;
-        quiet = true;
+        controller.setQuiet(true);
         model.seedRandom(123);
         model.setupPlayers(3, false);
         model.clearScores();
         for (int game = 0; game < 5; game++) {
-            playGame();
+            controller.playGame();
         }
         passed += check(model.score(0) == 138, "seeded bot games score Bot1");
         passed += check(model.score(1) == 246, "seeded bot games score Bot2");
         passed += check(model.score(2) == 98, "seeded bot games score Bot3");
-        quiet = false;
+        controller.setQuiet(false);
         return passed;
     }
 
@@ -1251,7 +1249,7 @@ public class Main {
             model.setupPlayers(1, true);
             model.setCurrentPlayer(0);
             model.currentHand().addAll(hand);
-            return view.withInput(input, Main::askHuman);
+            return view.withInput(input, controller::askHuman);
         } finally {
             System.setOut(originalOut);
             selfTestCapturedOutput = output.toString(StandardCharsets.UTF_8);
@@ -1263,7 +1261,7 @@ public class Main {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         System.setOut(new PrintStream(output));
         try {
-            return view.withInput("x\nb\n", Main::askColor);
+            return view.withInput("x\nb\n", controller::askColor);
         } finally {
             System.setOut(originalOut);
             selfTestCapturedOutput = output.toString(StandardCharsets.UTF_8);
