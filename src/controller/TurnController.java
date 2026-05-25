@@ -124,10 +124,11 @@ final class TurnController {
     }
 
     void showTurnEffect(UnoGame.TurnEffect effect) {
-        if (effect.type() == UnoGame.EffectType.DRAW_TWO) {
-            view.showDrawTwoPenalty(effect.playerName());
-        } else if (effect.type() == UnoGame.EffectType.DRAW_FOUR) {
-            view.showDrawFourPenalty(effect.playerName());
+        switch (effect.type()) {
+            case DRAW_TWO -> view.showDrawTwoPenalty(effect.playerName());
+            case DRAW_FOUR -> view.showDrawFourPenalty(effect.playerName());
+            case NONE -> {
+            }
         }
     }
 }

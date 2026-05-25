@@ -263,38 +263,44 @@ public class UnoGame {
     }
 
     public TurnEffect applyCardEffect(String card) {
-        if (rank(card).equals("SKIP")) {
-            advanceToNextPlayer();
-            advanceToNextPlayer();
-            return new TurnEffect(EffectType.NONE, "");
-        } else if (rank(card).equals("REVERSE")) {
-            reverseDirection();
-            if (playerCount() == 2) {
+        return switch (rank(card)) {
+            case "SKIP" -> {
                 advanceToNextPlayer();
                 advanceToNextPlayer();
-            } else {
-                advanceToNextPlayer();
+                yield new TurnEffect(EffectType.NONE, "");
             }
-            return new TurnEffect(EffectType.NONE, "");
-        } else if (rank(card).equals("DRAW_TWO")) {
-            advanceToNextPlayer();
-            currentHand().add(draw());
-            currentHand().add(draw());
-            String penaltyPlayerName = currentPlayerName();
-            advanceToNextPlayer();
-            return new TurnEffect(EffectType.DRAW_TWO, penaltyPlayerName);
-        } else if (rank(card).equals("WILD_DRAW_FOUR")) {
-            advanceToNextPlayer();
-            for (int i = 0; i < 4; i++) {
+            case "REVERSE" -> {
+                reverseDirection();
+                if (playerCount() == 2) {
+                    advanceToNextPlayer();
+                    advanceToNextPlayer();
+                } else {
+                    advanceToNextPlayer();
+                }
+                yield new TurnEffect(EffectType.NONE, "");
+            }
+            case "DRAW_TWO" -> {
+                advanceToNextPlayer();
                 currentHand().add(draw());
+                currentHand().add(draw());
+                String penaltyPlayerName = currentPlayerName();
+                advanceToNextPlayer();
+                yield new TurnEffect(EffectType.DRAW_TWO, penaltyPlayerName);
             }
-            String penaltyPlayerName = currentPlayerName();
-            advanceToNextPlayer();
-            return new TurnEffect(EffectType.DRAW_FOUR, penaltyPlayerName);
-        } else {
-            advanceToNextPlayer();
-            return new TurnEffect(EffectType.NONE, "");
-        }
+            case "WILD_DRAW_FOUR" -> {
+                advanceToNextPlayer();
+                for (int i = 0; i < 4; i++) {
+                    currentHand().add(draw());
+                }
+                String penaltyPlayerName = currentPlayerName();
+                advanceToNextPlayer();
+                yield new TurnEffect(EffectType.DRAW_FOUR, penaltyPlayerName);
+            }
+            default -> {
+                advanceToNextPlayer();
+                yield new TurnEffect(EffectType.NONE, "");
+            }
+        };
     }
 
     public void clearDeck() {

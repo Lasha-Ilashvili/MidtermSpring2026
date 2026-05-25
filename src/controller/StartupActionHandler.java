@@ -12,16 +12,20 @@ final class StartupActionHandler {
     }
 
     boolean handle(Startup.Action action) {
-        if (action == Startup.Action.SELF_TEST) {
-            CharacterizationTests.run();
-            return true;
-        } else if (action == Startup.Action.HELP) {
-            view.showUsage();
-            return true;
-        } else if (action == Startup.Action.UNSUPPORTED_UI) {
-            view.showUnsupportedUiType();
-            return true;
-        }
-        return false;
+        return switch (action) {
+            case SELF_TEST -> {
+                CharacterizationTests.run();
+                yield true;
+            }
+            case HELP -> {
+                view.showUsage();
+                yield true;
+            }
+            case UNSUPPORTED_UI -> {
+                view.showUnsupportedUiType();
+                yield true;
+            }
+            case START_GAME -> false;
+        };
     }
 }
