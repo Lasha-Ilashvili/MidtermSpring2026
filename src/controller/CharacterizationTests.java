@@ -13,7 +13,7 @@ final class CharacterizationTests {
 
     private final UnoGame model = new UnoGame();
     private final CLIEngine view = new CLIEngine();
-    private final Controller controller = new Controller(model, view);
+    private final UnoGameController controller = new UnoGameController(model, view);
     private String selfTestCapturedOutput = "";
 
     static void run() {

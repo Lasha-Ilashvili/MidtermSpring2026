@@ -6,7 +6,7 @@ import ui.UiType;
 import ui.UiView;
 import ui.UiViewFactory;
 
-public class Controller {
+public class UnoGameController {
 
     private final UiView view;
     private final StartupActionHandler startupActionHandler;
@@ -14,7 +14,7 @@ public class Controller {
     private final TurnController turnController;
     private final GameSessionController gameSessionController;
 
-    Controller(UnoGame model, UiView view) {
+    UnoGameController(UnoGame model, UiView view) {
         this.view = view;
         this.startupActionHandler = new StartupActionHandler(view);
         this.playerPromptController = new PlayerPromptController(model, view);
@@ -23,7 +23,7 @@ public class Controller {
     }
 
     public static void startNewGame(UiType uiType) {
-        new Controller(new UnoGame(), UiViewFactory.create(uiType)).runNewGame(uiType);
+        new UnoGameController(new UnoGame(), UiViewFactory.create(uiType)).runNewGame(uiType);
     }
 
     void runNewGame(UiType uiType) {
