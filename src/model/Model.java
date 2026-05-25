@@ -1,8 +1,6 @@
 package model;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Random;
 
 public class Model {
@@ -23,99 +21,70 @@ public class Model {
         }
     }
 
-    private final ArrayList<String> deck = new ArrayList<>();
-    private final ArrayList<String> discard = new ArrayList<>();
-    private final ArrayList<ArrayList<String>> hands = new ArrayList<>();
-    private final ArrayList<String> playerNames = new ArrayList<>();
-    private final ArrayList<Boolean> humanPlayers = new ArrayList<>();
-    private final int[] scores = new int[10];
-    private String upCard = "";
-    private String calledColor = "";
+    private final DrawPile drawPile = new DrawPile();
+    private final Players players = new Players();
+    private final TurnOrder turnOrder = new TurnOrder();
+    private final PlayArea playArea = new PlayArea();
     private Random random = new Random();
-    private int currentPlayer = 0;
-    private int direction = 1;
 
     public void seedRandom(long seed) {
         random = new Random(seed);
     }
 
     public boolean isPlayableColor(String color) {
-        return color.equals("R") || color.equals("Y") || color.equals("G") || color.equals("B");
+        return CardRules.isPlayableColor(color);
     }
 
     public void setupPlayers(int bots, boolean human) {
-        playerNames.clear();
-        humanPlayers.clear();
-        hands.clear();
-
-        if (human) {
-            playerNames.add("You");
-            humanPlayers.add(Boolean.TRUE);
-            hands.add(new ArrayList<>());
-        }
-
-        for (int i = 1; i <= bots; i++) {
-            playerNames.add("Bot" + i);
-            humanPlayers.add(Boolean.FALSE);
-            hands.add(new ArrayList<>());
-        }
+        players.setup(bots, human);
     }
 
     public ArrayList<String> playerNamesSnapshot() {
-        return new ArrayList<>(playerNames);
+        return players.namesSnapshot();
     }
 
     public int[] scoresSnapshot() {
-        return scores.clone();
+        return players.scoresSnapshot();
     }
 
     public void clearScores() {
-        Arrays.fill(scores, 0);
+        players.clearScores();
     }
 
     public int score(int player) {
-        return scores[player];
+        return players.score(player);
     }
 
     public void addScore(int player, int points) {
-        scores[player] += points;
+        players.addScore(player, points);
     }
 
     public int scoreCurrentPlayerFromOpponents() {
-        int points = 0;
-        for (int i = 0; i < playerCount(); i++) {
-            if (i != currentPlayer()) {
-                for (int j = 0; j < hand(i).size(); j++) {
-                    points += points(hand(i).get(j));
-                }
-            }
-        }
-        addScore(currentPlayer(), points);
-        return points;
+        return players.scoreFromOpponents(currentPlayer());
     }
 
     public String upCard() {
-        return upCard;
+        return playArea.upCard();
     }
 
     public void setUpCard(String upCard) {
-        this.upCard = upCard;
+        playArea.setUpCard(upCard);
     }
 
     public String calledColor() {
-        return calledColor;
+        return playArea.calledColor();
     }
 
     public void setCalledColor(String calledColor) {
-        this.calledColor = calledColor;
+        playArea.setCalledColor(calledColor);
     }
 
     public void clearCalledColor() {
-        calledColor = "";
+        playArea.clearCalledColor();
     }
 
     public int playerCount() {
-        return playerNames.size();
+        return players.count();
     }
 
     public boolean isPlayerCountValid() {
@@ -123,11 +92,11 @@ public class Model {
     }
 
     public String currentPlayerName() {
-        return playerNames.get(currentPlayer);
+        return players.name(currentPlayer());
     }
 
     public boolean isHumanCurrentPlayer() {
-        return humanPlayers.get(currentPlayer);
+        return players.isHuman(currentPlayer());
     }
 
     public boolean shouldCurrentPlayerAutoPlayDrawnCard(String drawn) {
@@ -139,11 +108,11 @@ public class Model {
     }
 
     public ArrayList<String> hand(int player) {
-        return hands.get(player);
+        return players.hand(player);
     }
 
     public ArrayList<String> currentHand() {
-        return hand(currentPlayer);
+        return hand(currentPlayer());
     }
 
     public ArrayList<String> currentHandSnapshot() {
@@ -218,9 +187,7 @@ public class Model {
     }
 
     public void clearHands() {
-        for (ArrayList<String> hand : hands) {
-            hand.clear();
-        }
+        players.clearHands();
     }
 
     public void startRound() {
@@ -236,27 +203,7 @@ public class Model {
     }
 
     public void buildDeck() {
-        clearDeck();
-
-        String[] colors = {"R", "Y", "G", "B"};
-        for (String color : colors) {
-            addToDeck(color + "0");
-            for (int n = 1; n <= 9; n++) {
-                addToDeck(color + n);
-                addToDeck(color + n);
-            }
-            addToDeck(color + "S");
-            addToDeck(color + "S");
-            addToDeck(color + "R");
-            addToDeck(color + "R");
-            addToDeck(color + "+2");
-            addToDeck(color + "+2");
-        }
-
-        for (int i = 0; i < 4; i++) {
-            addToDeck("W");
-            addToDeck("W4");
-        }
+        drawPile.buildDeck();
     }
 
     public void dealInitialHands() {
@@ -280,7 +227,7 @@ public class Model {
     }
 
     public void chooseRandomCurrentPlayer(int playerCount) {
-        currentPlayer = randomPlayerIndex(playerCount);
+        turnOrder.setCurrentPlayer(randomPlayerIndex(playerCount));
     }
 
     public void advanceToNextPlayer() {
@@ -288,37 +235,31 @@ public class Model {
     }
 
     public int currentPlayer() {
-        return currentPlayer;
+        return turnOrder.currentPlayer();
     }
 
     public int direction() {
-        return direction;
+        return turnOrder.direction();
     }
 
     public void setCurrentPlayer(int currentPlayer) {
-        this.currentPlayer = currentPlayer;
+        turnOrder.setCurrentPlayer(currentPlayer);
     }
 
     public void setDirection(int direction) {
-        this.direction = direction;
+        turnOrder.setDirection(direction);
     }
 
     public void resetTurnOrder() {
-        direction = 1;
+        turnOrder.reset();
     }
 
     public void reverseDirection() {
-        direction = direction * -1;
+        turnOrder.reverseDirection();
     }
 
     public void next(int playerCount) {
-        currentPlayer += direction;
-        if (currentPlayer >= playerCount) {
-            currentPlayer = 0;
-        }
-        if (currentPlayer < 0) {
-            currentPlayer = playerCount - 1;
-        }
+        turnOrder.next(playerCount);
     }
 
     public TurnEffect applyCardEffect(String card) {
@@ -357,65 +298,43 @@ public class Model {
     }
 
     public void clearDeck() {
-        deck.clear();
+        drawPile.clearDeck();
     }
 
     public void addToDeck(String card) {
-        deck.add(card);
+        drawPile.addToDeck(card);
     }
 
     public void shuffleDeck() {
-        Collections.shuffle(deck, random);
+        drawPile.shuffleDeck(random);
     }
 
     public void clearDiscard() {
-        discard.clear();
+        drawPile.clearDiscard();
     }
 
     public void discard(String card) {
-        discard.add(card);
+        drawPile.discard(card);
     }
 
     public int deckSize() {
-        return deck.size();
+        return drawPile.deckSize();
     }
 
     public String firstDeckCard() {
-        return deck.getFirst();
+        return drawPile.firstDeckCard();
     }
 
     public boolean isDiscardEmpty() {
-        return discard.isEmpty();
+        return drawPile.isDiscardEmpty();
     }
 
     public String draw() {
-        if (deck.isEmpty()) {
-            deck.addAll(discard);
-            discard.clear();
-            Collections.shuffle(deck, random);
-        }
-
-        if (deck.isEmpty()) {
-            return "W";
-        }
-
-        return deck.removeFirst();
+        return drawPile.draw(random);
     }
 
     public boolean isLegal(String card, String up, String call) {
-        if (card.startsWith("W")) {
-            return true;
-        }
-        if (color(card).equals(color(up))) {
-            return true;
-        }
-        if (!call.isEmpty() && color(card).equals(call)) {
-            return true;
-        }
-        if (rank(card).equals(rank(up)) && !rank(card).equals("NUMBER")) {
-            return true;
-        }
-        return rank(card).equals("NUMBER") && rank(up).equals("NUMBER") && number(card) == number(up);
+        return CardRules.isLegal(card, up, call);
     }
 
     public boolean isLegalForCurrentState(String card) {
@@ -423,114 +342,34 @@ public class Model {
     }
 
     public boolean isWildCard(String card) {
-        return card.equals("W") || card.equals("W4");
+        return CardRules.isWildCard(card);
     }
 
     public int chooseBotCard(ArrayList<String> hand) {
-        int chosen = chooseFirstLegalCardByRank(hand, "DRAW_TWO");
-        if (chosen != -1) {
-            return chosen;
-        }
-        chosen = chooseFirstLegalCardByRank(hand, "SKIP");
-        if (chosen != -1) {
-            return chosen;
-        }
-        chosen = chooseFirstLegalCardByRank(hand, "NUMBER");
-        if (chosen != -1) {
-            return chosen;
-        }
-        for (int i = 0; i < hand.size(); i++) {
-            if (hand.get(i).startsWith("W")) {
-                return i;
-            }
-        }
-        return -1;
+        return BotStrategy.chooseBotCard(hand, upCard(), calledColor());
     }
 
     public int chooseFirstLegalCardByRank(ArrayList<String> hand, String targetRank) {
-        for (int i = 0; i < hand.size(); i++) {
-            String card = hand.get(i);
-            if (rank(card).equals(targetRank) && isLegalForCurrentState(card)) {
-                return i;
-            }
-        }
-        return -1;
+        return BotStrategy.chooseFirstLegalCardByRank(hand, targetRank, upCard(), calledColor());
     }
 
     public String chooseBotColor(ArrayList<String> hand) {
-        int r = 0;
-        int y = 0;
-        int g = 0;
-        int b = 0;
-        for (String s : hand) {
-            String c = color(s);
-            switch (c) {
-                case "R" -> r++;
-                case "Y" -> y++;
-                case "G" -> g++;
-                case "B" -> b++;
-            }
-        }
-        if (r >= y && r >= g && r >= b) {
-            return "R";
-        } else if (y >= r && y >= g && y >= b) {
-            return "Y";
-        } else if (g >= r && g >= y && g >= b) {
-            return "G";
-        } else {
-            return "B";
-        }
+        return BotStrategy.chooseBotColor(hand);
     }
 
     public String color(String card) {
-        if (card.startsWith("R")) {
-            return "R";
-        }
-        if (card.startsWith("Y")) {
-            return "Y";
-        }
-        if (card.startsWith("G")) {
-            return "G";
-        }
-        if (card.startsWith("B")) {
-            return "B";
-        }
-        return "";
+        return CardRules.color(card);
     }
 
     public String rank(String card) {
-        if (card.equals("W")) {
-            return "WILD";
-        }
-        if (card.equals("W4")) {
-            return "WILD_DRAW_FOUR";
-        }
-        if (card.endsWith("S")) {
-            return "SKIP";
-        }
-        if (card.endsWith("R")) {
-            return "REVERSE";
-        }
-        if (card.endsWith("+2")) {
-            return "DRAW_TWO";
-        }
-        return "NUMBER";
+        return CardRules.rank(card);
     }
 
     public int number(String card) {
-        if (rank(card).equals("NUMBER")) {
-            return Integer.parseInt(card.substring(1));
-        }
-        return -1;
+        return CardRules.number(card);
     }
 
     public int points(String card) {
-        String r = rank(card);
-        return switch (r) {
-            case "NUMBER" -> number(card);
-            case "SKIP", "REVERSE", "DRAW_TWO" -> 20;
-            case "WILD", "WILD_DRAW_FOUR" -> 50;
-            default -> 0;
-        };
+        return CardRules.points(card);
     }
 }
