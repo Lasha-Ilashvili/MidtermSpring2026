@@ -263,13 +263,13 @@ public class UnoGame {
     }
 
     public TurnEffect applyCardEffect(String card) {
-        return switch (rank(card)) {
-            case "SKIP" -> {
+        return switch (CardRules.rankValue(card)) {
+            case SKIP -> {
                 advanceToNextPlayer();
                 advanceToNextPlayer();
                 yield new TurnEffect(EffectType.NONE, "");
             }
-            case "REVERSE" -> {
+            case REVERSE -> {
                 reverseDirection();
                 if (playerCount() == 2) {
                     advanceToNextPlayer();
@@ -279,7 +279,7 @@ public class UnoGame {
                 }
                 yield new TurnEffect(EffectType.NONE, "");
             }
-            case "DRAW_TWO" -> {
+            case DRAW_TWO -> {
                 advanceToNextPlayer();
                 currentHand().add(draw());
                 currentHand().add(draw());
@@ -287,7 +287,7 @@ public class UnoGame {
                 advanceToNextPlayer();
                 yield new TurnEffect(EffectType.DRAW_TWO, penaltyPlayerName);
             }
-            case "WILD_DRAW_FOUR" -> {
+            case WILD_DRAW_FOUR -> {
                 advanceToNextPlayer();
                 for (int i = 0; i < 4; i++) {
                     currentHand().add(draw());
@@ -353,10 +353,6 @@ public class UnoGame {
 
     public int chooseBotCard(ArrayList<String> hand) {
         return BotStrategy.chooseBotCard(hand, upCard(), calledColor());
-    }
-
-    public int chooseFirstLegalCardByRank(ArrayList<String> hand, String targetRank) {
-        return BotStrategy.chooseFirstLegalCardByRank(hand, targetRank, upCard(), calledColor());
     }
 
     public String chooseBotColor(ArrayList<String> hand) {

@@ -13,7 +13,7 @@ final class CardRules {
         Card candidate = Card.fromCode(card);
         Card upCard = Card.fromCode(up);
 
-        if (candidate.isWild()) {
+        if (candidate.hasWildPrefix()) {
             return true;
         }
         if (candidate.color() == upCard.color()) {
@@ -37,7 +37,11 @@ final class CardRules {
     }
 
     static String rank(String card) {
-        return Card.fromCode(card).rank().name();
+        return rankValue(card).name();
+    }
+
+    static CardRank rankValue(String card) {
+        return Card.fromCode(card).rank();
     }
 
     static int number(String card) {

@@ -28,6 +28,10 @@ record Card(String code) {
         return code.equals("W") || code.equals("W4");
     }
 
+    boolean hasWildPrefix() {
+        return code.startsWith("W");
+    }
+
     boolean canMatchRank(Card other) {
         return rank() == other.rank() && rank().isAction();
     }
