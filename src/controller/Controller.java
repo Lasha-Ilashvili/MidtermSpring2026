@@ -12,12 +12,14 @@ public class Controller {
     private final UiView view;
     private final StartupActionHandler startupActionHandler;
     private final PlayerPromptController playerPromptController;
+    private final TurnController turnController;
 
     Controller(Model model, UiView view) {
         this.model = model;
         this.view = view;
         this.startupActionHandler = new StartupActionHandler(view);
         this.playerPromptController = new PlayerPromptController(model, view);
+        this.turnController = new TurnController(model, view, playerPromptController);
     }
 
     public static void startNewGame(UiType uiType) {
@@ -70,14 +72,7 @@ public class Controller {
         int guard = 0;
         while (guard < 3000) {
             guard++;
-            String name = model.currentPlayerName();
-
-            view.showTurn(name, model.currentHandSnapshot(), model.upCard(), model.calledColor());
-
-            int chosen = chooseCardForCurrentPlayer();
-            chosen = chooseDrawnCardIfNeeded(chosen, name);
-
-            if (finishTurn(chosen, name)) {
+            if (turnController.playCurrentTurn()) {
                 return;
             }
         }
@@ -86,108 +81,35 @@ public class Controller {
     }
 
     int chooseCardForCurrentPlayer() {
-        if (model.isHumanCurrentPlayer()) {
-            return askHuman();
-        }
-        return model.chooseCurrentBotCard();
+        return turnController.chooseCardForCurrentPlayer();
     }
 
     int chooseDrawnCardIfNeeded(int chosen, String playerName) {
-        if (chosen != -1) {
-            return chosen;
-        }
-
-        String drawn = model.drawForCurrentPlayer();
-        view.showCardDrawn(playerName, drawn);
-
-        if (model.shouldCurrentPlayerAutoPlayDrawnCard(drawn)) {
-            return model.lastCurrentHandIndex();
-        }
-        if (model.shouldAskCurrentPlayerToPlayDrawnCard(drawn)) {
-            view.showPlayDrawnCardPrompt(drawn);
-            if (view.readPlayDrawnCardDecision()) {
-                return model.lastCurrentHandIndex();
-            }
-        }
-        return chosen;
+        return turnController.chooseDrawnCardIfNeeded(chosen, playerName);
     }
 
     boolean finishTurn(int chosen, String playerName) {
-        if (chosen < 0) {
-            model.advanceToNextPlayer();
-            return false;
-        }
-
-        if (penalizeInvalidSelection(chosen, playerName)) {
-            return false;
-        }
-
-        String card = model.currentHandCard(chosen);
-        model.playCardFromCurrentHand(chosen);
-        view.showCardPlayed(playerName, card);
-
-        callColorIfNeeded(card, playerName);
-        showUnoIfNeeded(playerName);
-
-        if (scoreRoundIfFinished(playerName)) {
-            return true;
-        }
-
-        showTurnEffect(model.applyCardEffect(card));
-        return false;
+        return turnController.finishTurn(chosen, playerName);
     }
 
     boolean penalizeInvalidSelection(int chosen, String playerName) {
-        if (model.isOutsideCurrentHand(chosen)) {
-            view.showInvalidIndexPenalty(playerName);
-            model.drawPenaltyAndAdvanceCurrentPlayer();
-            return true;
-        }
-
-        String card = model.currentHandCard(chosen);
-        if (!model.isLegalForCurrentState(card)) {
-            view.showIllegalCardPenalty(playerName, card);
-            model.drawPenaltyAndAdvanceCurrentPlayer();
-            return true;
-        }
-        return false;
+        return turnController.penalizeInvalidSelection(chosen, playerName);
     }
 
     void callColorIfNeeded(String card, String playerName) {
-        if (!model.isWildCard(card)) {
-            return;
-        }
-
-        if (model.isHumanCurrentPlayer()) {
-            model.setCalledColor(askColor());
-        } else {
-            model.setCalledColor(model.chooseCurrentBotColor());
-        }
-        view.showColorCalled(playerName, model.calledColor());
+        turnController.callColorIfNeeded(card, playerName);
     }
 
     void showUnoIfNeeded(String playerName) {
-        if (model.currentPlayerHasOneCard()) {
-            view.showUno(playerName);
-        }
+        turnController.showUnoIfNeeded(playerName);
     }
 
     boolean scoreRoundIfFinished(String playerName) {
-        if (!model.currentPlayerHasNoCards()) {
-            return false;
-        }
-
-        int points = model.scoreCurrentPlayerFromOpponents();
-        view.showWinnerScore(playerName, points);
-        return true;
+        return turnController.scoreRoundIfFinished(playerName);
     }
 
     void showTurnEffect(Model.TurnEffect effect) {
-        if (effect.type() == Model.EffectType.DRAW_TWO) {
-            view.showDrawTwoPenalty(effect.playerName());
-        } else if (effect.type() == Model.EffectType.DRAW_FOUR) {
-            view.showDrawFourPenalty(effect.playerName());
-        }
+        turnController.showTurnEffect(effect);
     }
 
     int askHuman() {
