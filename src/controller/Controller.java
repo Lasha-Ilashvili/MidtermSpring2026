@@ -9,9 +9,6 @@ import ui.UiViewFactory;
 
 public class Controller {
 
-    private record Settings(int bots, int games, long seed, boolean human) {
-    }
-
     private final Model model;
     private final UiView view;
 
@@ -32,7 +29,7 @@ public class Controller {
             return;
         }
 
-        Settings settings = startupSettings(startupInput);
+        GameSettings settings = startupSettings(startupInput);
         setupGame(settings);
 
         if (!model.isPlayerCountValid()) {
@@ -58,25 +55,11 @@ public class Controller {
         return false;
     }
 
-    Settings startupSettings(Startup.Input startupInput) {
-        int bots = 3;
-        int games = 1;
-        long seed = System.currentTimeMillis();
-
-        if (startupInput.bots() != null) {
-            bots = Integer.parseInt(startupInput.bots());
-        }
-        if (startupInput.games() != null) {
-            games = Integer.parseInt(startupInput.games());
-        }
-        if (startupInput.seed() != null) {
-            seed = Long.parseLong(startupInput.seed());
-        }
-
-        return new Settings(bots, games, seed, startupInput.human());
+    GameSettings startupSettings(Startup.Input startupInput) {
+        return GameSettings.from(startupInput);
     }
 
-    void setupGame(Settings settings) {
+    void setupGame(GameSettings settings) {
         model.seedRandom(settings.seed());
         model.setupPlayers(settings.bots(), settings.human());
     }
