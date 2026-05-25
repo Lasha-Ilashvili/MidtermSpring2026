@@ -226,7 +226,7 @@ The final branch was verified with:
 ```bash
 scripts/compile.sh
 scripts/test.sh
-java -cp out Main --bots 3 --games 5 --quiet --seed 123
+scripts/run.sh --bots 3 --games 5 --quiet --seed 123
 ```
 
 The deterministic smoke run produced:
