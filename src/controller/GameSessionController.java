@@ -1,6 +1,6 @@
 package controller;
 
-import model.UnoGame;
+import game.UnoGame;
 import ui.UiView;
 
 final class GameSessionController {

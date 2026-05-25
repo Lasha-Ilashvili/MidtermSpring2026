@@ -1,7 +1,7 @@
 package controller;
 
 import java.util.ArrayList;
-import model.UnoGame;
+import game.UnoGame;
 
 final class ModelCharacterizationTests {
 

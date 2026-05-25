@@ -1,7 +1,7 @@
 package controller;
 
 import java.util.ArrayList;
-import model.UnoGame;
+import game.UnoGame;
 import ui.cli.CliView;
 
 final class ControllerCharacterizationTests {
