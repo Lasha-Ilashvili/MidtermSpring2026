@@ -68,7 +68,7 @@ public class UnoGame {
         return playArea.upCard();
     }
 
-    public void setUpCard(String upCard) {
+    void setUpCard(String upCard) {
         playArea.setUpCard(upCard);
     }
 
@@ -80,7 +80,7 @@ public class UnoGame {
         playArea.setCalledColor(calledColor);
     }
 
-    public void clearCalledColor() {
+    void clearCalledColor() {
         playArea.clearCalledColor();
     }
 
@@ -116,12 +116,17 @@ public class UnoGame {
         return hand(currentPlayer());
     }
 
-    public void addCardsToCurrentHand(List<String> cards) {
-        currentHand().addAll(cards);
-    }
-
     public List<String> currentHandSnapshot() {
         return new ArrayList<>(currentHand());
+    }
+
+    public void setupCurrentHumanTurn(String upCard, List<String> hand) {
+        setupPlayers(1, true);
+        setCurrentPlayer(0);
+        currentHand().clear();
+        currentHand().addAll(hand);
+        setUpCard(upCard);
+        clearCalledColor();
     }
 
     int currentHandSize() {
@@ -247,7 +252,7 @@ public class UnoGame {
         return turnOrder.direction();
     }
 
-    public void setCurrentPlayer(int currentPlayer) {
+    void setCurrentPlayer(int currentPlayer) {
         turnOrder.setCurrentPlayer(currentPlayer);
     }
 
