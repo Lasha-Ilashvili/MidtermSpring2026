@@ -4,21 +4,21 @@ import java.util.List;
 
 final class BotStrategy {
 
+    private static final List<CardRank> PLAY_PRIORITY = List.of(
+            CardRank.DRAW_TWO,
+            CardRank.SKIP,
+            CardRank.NUMBER
+    );
+
     private BotStrategy() {
     }
 
     static int chooseBotCard(List<String> hand, String upCard, String calledColor) {
-        int chosen = chooseFirstLegalCardByRank(hand, CardRank.DRAW_TWO, upCard, calledColor);
-        if (chosen != -1) {
-            return chosen;
-        }
-        chosen = chooseFirstLegalCardByRank(hand, CardRank.SKIP, upCard, calledColor);
-        if (chosen != -1) {
-            return chosen;
-        }
-        chosen = chooseFirstLegalCardByRank(hand, CardRank.NUMBER, upCard, calledColor);
-        if (chosen != -1) {
-            return chosen;
+        for (CardRank rank : PLAY_PRIORITY) {
+            int chosen = chooseFirstLegalCardByRank(hand, rank, upCard, calledColor);
+            if (chosen != -1) {
+                return chosen;
+            }
         }
         for (int i = 0; i < hand.size(); i++) {
             if (Card.fromCode(hand.get(i)).hasWildPrefix()) {
