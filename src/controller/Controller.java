@@ -8,7 +8,6 @@ import ui.UiViewFactory;
 
 public class Controller {
 
-    private final Model model;
     private final UiView view;
     private final StartupActionHandler startupActionHandler;
     private final PlayerPromptController playerPromptController;
@@ -16,7 +15,6 @@ public class Controller {
     private final GameSessionController gameSessionController;
 
     Controller(Model model, UiView view) {
-        this.model = model;
         this.view = view;
         this.startupActionHandler = new StartupActionHandler(view);
         this.playerPromptController = new PlayerPromptController(model, view);
