@@ -6,11 +6,11 @@ import ui.UiView;
 
 final class PlayerPromptController {
 
-    private final UnoGame model;
+    private final UnoGame game;
     private final UiView view;
 
-    PlayerPromptController(UnoGame model, UiView view) {
-        this.model = model;
+    PlayerPromptController(UnoGame game, UiView view) {
+        this.game = game;
         this.view = view;
     }
 
@@ -23,11 +23,11 @@ final class PlayerPromptController {
             }
 
             if (choice.type() == PlayerInput.CardChoiceType.INDEX) {
-                if (model.isCurrentHandIndex(choice.index())) {
+                if (game.isCurrentHandIndex(choice.index())) {
                     return choice.index();
                 }
             } else {
-                UnoGame.CardCodeChoice cardChoice = model.chooseCurrentCardByCode(choice.cardCode());
+                UnoGame.CardCodeChoice cardChoice = game.chooseCurrentCardByCode(choice.cardCode());
                 if (cardChoice.hasLegalMatch()) {
                     return cardChoice.index();
                 }
@@ -43,7 +43,7 @@ final class PlayerPromptController {
         while (true) {
             view.showCallColorPrompt();
             String input = view.readColorInput();
-            if (model.isPlayableColor(input)) {
+            if (game.isPlayableColor(input)) {
                 return input;
             }
             view.showBadColor();

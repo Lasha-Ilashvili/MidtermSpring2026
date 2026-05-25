@@ -14,12 +14,12 @@ public class UnoGameController {
     private final TurnController turnController;
     private final GameSessionController gameSessionController;
 
-    UnoGameController(UnoGame model, UiView view) {
+    UnoGameController(UnoGame game, UiView view) {
         this.view = view;
         this.startupActionHandler = new StartupActionHandler(view);
-        this.playerPromptController = new PlayerPromptController(model, view);
-        this.turnController = new TurnController(model, view, playerPromptController);
-        this.gameSessionController = new GameSessionController(model, view, turnController);
+        this.playerPromptController = new PlayerPromptController(game, view);
+        this.turnController = new TurnController(game, view, playerPromptController);
+        this.gameSessionController = new GameSessionController(game, view, turnController);
     }
 
     public static void startNewGame(UiType uiType) {
