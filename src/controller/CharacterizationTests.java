@@ -7,12 +7,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.function.Supplier;
 import model.UnoGame;
-import ui.cli.CLIEngine;
+import ui.cli.CliView;
 
 final class CharacterizationTests {
 
     private final UnoGame model = new UnoGame();
-    private final CLIEngine view = new CLIEngine();
+    private final CliView view = new CliView();
     private final UnoGameController controller = new UnoGameController(model, view);
     private String selfTestCapturedOutput = "";
 
