@@ -264,43 +264,48 @@ public class UnoGame {
 
     public TurnEffect applyCardEffect(String card) {
         return switch (CardRules.rankValue(card)) {
-            case SKIP -> {
-                advanceToNextPlayer();
-                advanceToNextPlayer();
-                yield new TurnEffect(EffectType.NONE, "");
-            }
-            case REVERSE -> {
-                reverseDirection();
-                if (playerCount() == 2) {
-                    advanceToNextPlayer();
-                    advanceToNextPlayer();
-                } else {
-                    advanceToNextPlayer();
-                }
-                yield new TurnEffect(EffectType.NONE, "");
-            }
-            case DRAW_TWO -> {
-                advanceToNextPlayer();
-                currentHand().add(draw());
-                currentHand().add(draw());
-                String penaltyPlayerName = currentPlayerName();
-                advanceToNextPlayer();
-                yield new TurnEffect(EffectType.DRAW_TWO, penaltyPlayerName);
-            }
-            case WILD_DRAW_FOUR -> {
-                advanceToNextPlayer();
-                for (int i = 0; i < 4; i++) {
-                    currentHand().add(draw());
-                }
-                String penaltyPlayerName = currentPlayerName();
-                advanceToNextPlayer();
-                yield new TurnEffect(EffectType.DRAW_FOUR, penaltyPlayerName);
-            }
-            default -> {
-                advanceToNextPlayer();
-                yield new TurnEffect(EffectType.NONE, "");
-            }
+            case SKIP -> skipNextPlayer();
+            case REVERSE -> reverseTurnOrder();
+            case DRAW_TWO -> drawCardsAndSkip(2, EffectType.DRAW_TWO);
+            case WILD_DRAW_FOUR -> drawCardsAndSkip(4, EffectType.DRAW_FOUR);
+            default -> advanceNormally();
         };
+    }
+
+    private TurnEffect skipNextPlayer() {
+        advanceToNextPlayer();
+        advanceToNextPlayer();
+        return noVisibleEffect();
+    }
+
+    private TurnEffect reverseTurnOrder() {
+        reverseDirection();
+        if (playerCount() == 2) {
+            advanceToNextPlayer();
+            advanceToNextPlayer();
+        } else {
+            advanceToNextPlayer();
+        }
+        return noVisibleEffect();
+    }
+
+    private TurnEffect drawCardsAndSkip(int cardCount, EffectType effectType) {
+        advanceToNextPlayer();
+        for (int i = 0; i < cardCount; i++) {
+            currentHand().add(draw());
+        }
+        String penaltyPlayerName = currentPlayerName();
+        advanceToNextPlayer();
+        return new TurnEffect(effectType, penaltyPlayerName);
+    }
+
+    private TurnEffect advanceNormally() {
+        advanceToNextPlayer();
+        return noVisibleEffect();
+    }
+
+    private TurnEffect noVisibleEffect() {
+        return new TurnEffect(EffectType.NONE, "");
     }
 
     public void clearDeck() {
