@@ -1,6 +1,6 @@
 package controller;
 
-import java.util.ArrayList;
+import java.util.List;
 import game.UnoGame;
 import ui.cli.CliView;
 
@@ -52,7 +52,7 @@ final class PlayerPromptCharacterizationTests {
         return passed;
     }
 
-    private int askHumanForSelfTest(ArrayList<String> hand, String upCard, String input) {
+    private int askHumanForSelfTest(List<String> hand, String upCard, String input) {
         return output.capture(() -> {
             game.setupCurrentHumanTurn(upCard, hand);
             return view.withInput(input, controller::askHuman);

@@ -2,6 +2,7 @@ package game;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public final class GameCharacterizationTests {
 
@@ -271,7 +272,7 @@ public final class GameCharacterizationTests {
         return 1;
     }
 
-    private static ArrayList<String> cards(String... values) {
+    private static List<String> cards(String... values) {
         ArrayList<String> result = new ArrayList<>();
         Collections.addAll(result, values);
         return result;

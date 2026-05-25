@@ -2,6 +2,7 @@ package controller;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 final class SelfTestSupport {
 
@@ -15,7 +16,7 @@ final class SelfTestSupport {
         return 1;
     }
 
-    static ArrayList<String> cards(String... values) {
+    static List<String> cards(String... values) {
         ArrayList<String> result = new ArrayList<>();
         Collections.addAll(result, values);
         return result;
