@@ -1,6 +1,7 @@
 package game;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class UnoGame {
@@ -39,7 +40,7 @@ public class UnoGame {
         players.setup(bots, human);
     }
 
-    public ArrayList<String> playerNamesSnapshot() {
+    public List<String> playerNamesSnapshot() {
         return players.namesSnapshot();
     }
 
@@ -47,15 +48,15 @@ public class UnoGame {
         return players.scoresSnapshot();
     }
 
-    public void clearScores() {
+    void clearScores() {
         players.clearScores();
     }
 
-    public int score(int player) {
+    int score(int player) {
         return players.score(player);
     }
 
-    public void addScore(int player, int points) {
+    void addScore(int player, int points) {
         players.addScore(player, points);
     }
 
@@ -67,7 +68,7 @@ public class UnoGame {
         return playArea.upCard();
     }
 
-    public void setUpCard(String upCard) {
+    void setUpCard(String upCard) {
         playArea.setUpCard(upCard);
     }
 
@@ -79,11 +80,11 @@ public class UnoGame {
         playArea.setCalledColor(calledColor);
     }
 
-    public void clearCalledColor() {
+    void clearCalledColor() {
         playArea.clearCalledColor();
     }
 
-    public int playerCount() {
+    int playerCount() {
         return players.count();
     }
 
@@ -107,19 +108,28 @@ public class UnoGame {
         return isLegalForCurrentState(drawn) && isHumanCurrentPlayer();
     }
 
-    public ArrayList<String> hand(int player) {
+    ArrayList<String> hand(int player) {
         return players.hand(player);
     }
 
-    public ArrayList<String> currentHand() {
+    ArrayList<String> currentHand() {
         return hand(currentPlayer());
     }
 
-    public ArrayList<String> currentHandSnapshot() {
+    public List<String> currentHandSnapshot() {
         return new ArrayList<>(currentHand());
     }
 
-    public int currentHandSize() {
+    public void setupCurrentHumanTurn(String upCard, List<String> hand) {
+        setupPlayers(1, true);
+        setCurrentPlayer(0);
+        currentHand().clear();
+        currentHand().addAll(hand);
+        setUpCard(upCard);
+        clearCalledColor();
+    }
+
+    int currentHandSize() {
         return currentHand().size();
     }
 
@@ -186,7 +196,7 @@ public class UnoGame {
         clearCalledColor();
     }
 
-    public void clearHands() {
+    void clearHands() {
         players.clearHands();
     }
 
@@ -202,11 +212,11 @@ public class UnoGame {
         chooseRandomCurrentPlayer(playerCount());
     }
 
-    public void buildDeck() {
+    void buildDeck() {
         drawPile.buildDeck();
     }
 
-    public void dealInitialHands() {
+    void dealInitialHands() {
         for (int i = 0; i < playerCount(); i++) {
             for (int j = 0; j < 7; j++) {
                 hand(i).add(draw());
@@ -214,7 +224,7 @@ public class UnoGame {
         }
     }
 
-    public void chooseStartingUpCard() {
+    void chooseStartingUpCard() {
         setUpCard(draw());
         while (upCard().startsWith("W")) {
             discard(upCard());
@@ -222,11 +232,11 @@ public class UnoGame {
         }
     }
 
-    public int randomPlayerIndex(int playerCount) {
+    int randomPlayerIndex(int playerCount) {
         return random.nextInt(playerCount);
     }
 
-    public void chooseRandomCurrentPlayer(int playerCount) {
+    void chooseRandomCurrentPlayer(int playerCount) {
         turnOrder.setCurrentPlayer(randomPlayerIndex(playerCount));
     }
 
@@ -234,31 +244,31 @@ public class UnoGame {
         next(playerCount());
     }
 
-    public int currentPlayer() {
+    int currentPlayer() {
         return turnOrder.currentPlayer();
     }
 
-    public int direction() {
+    int direction() {
         return turnOrder.direction();
     }
 
-    public void setCurrentPlayer(int currentPlayer) {
+    void setCurrentPlayer(int currentPlayer) {
         turnOrder.setCurrentPlayer(currentPlayer);
     }
 
-    public void setDirection(int direction) {
+    void setDirection(int direction) {
         turnOrder.setDirection(direction);
     }
 
-    public void resetTurnOrder() {
+    void resetTurnOrder() {
         turnOrder.reset();
     }
 
-    public void reverseDirection() {
+    void reverseDirection() {
         turnOrder.reverseDirection();
     }
 
-    public void next(int playerCount) {
+    void next(int playerCount) {
         turnOrder.next(playerCount);
     }
 
@@ -308,43 +318,43 @@ public class UnoGame {
         return new TurnEffect(EffectType.NONE, "");
     }
 
-    public void clearDeck() {
+    void clearDeck() {
         drawPile.clearDeck();
     }
 
-    public void addToDeck(String card) {
+    void addToDeck(String card) {
         drawPile.addToDeck(card);
     }
 
-    public void shuffleDeck() {
+    void shuffleDeck() {
         drawPile.shuffleDeck(random);
     }
 
-    public void clearDiscard() {
+    void clearDiscard() {
         drawPile.clearDiscard();
     }
 
-    public void discard(String card) {
+    void discard(String card) {
         drawPile.discard(card);
     }
 
-    public int deckSize() {
+    int deckSize() {
         return drawPile.deckSize();
     }
 
-    public String firstDeckCard() {
+    String firstDeckCard() {
         return drawPile.firstDeckCard();
     }
 
-    public boolean isDiscardEmpty() {
+    boolean isDiscardEmpty() {
         return drawPile.isDiscardEmpty();
     }
 
-    public String draw() {
+    String draw() {
         return drawPile.draw(random);
     }
 
-    public boolean isLegal(String card, String up, String call) {
+    boolean isLegal(String card, String up, String call) {
         return CardRules.isLegal(card, up, call);
     }
 
@@ -356,27 +366,27 @@ public class UnoGame {
         return CardRules.isWildCard(card);
     }
 
-    public int chooseBotCard(ArrayList<String> hand) {
+    int chooseBotCard(List<String> hand) {
         return BotStrategy.chooseBotCard(hand, upCard(), calledColor());
     }
 
-    public String chooseBotColor(ArrayList<String> hand) {
+    String chooseBotColor(List<String> hand) {
         return BotStrategy.chooseBotColor(hand);
     }
 
-    public String color(String card) {
+    String color(String card) {
         return CardRules.color(card);
     }
 
-    public String rank(String card) {
+    String rank(String card) {
         return CardRules.rank(card);
     }
 
-    public int number(String card) {
+    int number(String card) {
         return CardRules.number(card);
     }
 
-    public int points(String card) {
+    int points(String card) {
         return CardRules.points(card);
     }
 }

@@ -62,10 +62,6 @@ public class UnoGameController {
         gameSessionController.playGames(games);
     }
 
-    void playGame() {
-        gameSessionController.playGame();
-    }
-
     int askHuman() {
         return playerPromptController.askHuman();
     }

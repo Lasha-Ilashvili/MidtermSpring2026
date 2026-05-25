@@ -1,6 +1,6 @@
 package controller;
 
-import java.util.ArrayList;
+import java.util.List;
 import game.UnoGame;
 import ui.cli.CliView;
 
@@ -20,25 +20,19 @@ final class PlayerPromptCharacterizationTests {
 
     private int humanInputQuirkTests() {
         int passed = 0;
-        game.setUpCard("R5");
-        game.clearCalledColor();
         passed += SelfTestSupport.check(
-                askHumanForSelfTest(SelfTestSupport.cards("R9"), "draw\n") == -1,
+                askHumanForSelfTest(SelfTestSupport.cards("R9"), "R5", "draw\n") == -1,
                 "human can draw while holding legal card");
 
-        game.setUpCard("R5");
-        game.clearCalledColor();
         passed += SelfTestSupport.check(
-                askHumanForSelfTest(SelfTestSupport.cards("B3", "R9"), "0\n") == 0,
+                askHumanForSelfTest(SelfTestSupport.cards("B3", "R9"), "R5", "0\n") == 0,
                 "human index input bypasses legality check");
         passed += SelfTestSupport.check(
                 !game.isLegalForCurrentState("B3"),
                 "indexed illegal card remains illegal later");
 
-        game.setUpCard("R5");
-        game.clearCalledColor();
         passed += SelfTestSupport.check(
-                askHumanForSelfTest(SelfTestSupport.cards("B3", "R9"), "B3\nR9\n") == 1,
+                askHumanForSelfTest(SelfTestSupport.cards("B3", "R9"), "R5", "B3\nR9\n") == 1,
                 "human card code rejects illegal card");
         passed += SelfTestSupport.check(
                 output.contains("That card is not legal."),
@@ -58,11 +52,9 @@ final class PlayerPromptCharacterizationTests {
         return passed;
     }
 
-    private int askHumanForSelfTest(ArrayList<String> hand, String input) {
+    private int askHumanForSelfTest(List<String> hand, String upCard, String input) {
         return output.capture(() -> {
-            game.setupPlayers(1, true);
-            game.setCurrentPlayer(0);
-            game.currentHand().addAll(hand);
+            game.setupCurrentHumanTurn(upCard, hand);
             return view.withInput(input, controller::askHuman);
         });
     }

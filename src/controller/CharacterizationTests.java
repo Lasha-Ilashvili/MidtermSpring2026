@@ -1,5 +1,7 @@
 package controller;
 
+import game.GameCharacterizationTests;
+
 final class CharacterizationTests {
 
     static void run() {
