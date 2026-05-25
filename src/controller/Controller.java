@@ -13,6 +13,7 @@ public class Controller {
     private final StartupActionHandler startupActionHandler;
     private final PlayerPromptController playerPromptController;
     private final TurnController turnController;
+    private final GameSessionController gameSessionController;
 
     Controller(Model model, UiView view) {
         this.model = model;
@@ -20,6 +21,7 @@ public class Controller {
         this.startupActionHandler = new StartupActionHandler(view);
         this.playerPromptController = new PlayerPromptController(model, view);
         this.turnController = new TurnController(model, view, playerPromptController);
+        this.gameSessionController = new GameSessionController(model, view, turnController);
     }
 
     public static void startNewGame(UiType uiType) {
@@ -37,13 +39,13 @@ public class Controller {
         GameSettings settings = startupSettings(startupInput);
         setupGame(settings);
 
-        if (!model.isPlayerCountValid()) {
+        if (!gameSessionController.isPlayerCountValid()) {
             view.showInvalidPlayerCount();
             return;
         }
 
         playGames(settings.games());
-        view.showFinalScores(model.playerNamesSnapshot(), model.scoresSnapshot());
+        gameSessionController.showFinalScores();
     }
 
     boolean handleStartupAction(Startup.Action action) {
@@ -55,29 +57,15 @@ public class Controller {
     }
 
     void setupGame(GameSettings settings) {
-        model.seedRandom(settings.seed());
-        model.setupPlayers(settings.bots(), settings.human());
+        gameSessionController.setupGame(settings);
     }
 
     void playGames(int games) {
-        for (int gameCount = 1; gameCount <= games; gameCount++) {
-            view.showGameHeader(gameCount);
-            playGame();
-        }
+        gameSessionController.playGames(games);
     }
 
     void playGame() {
-        model.startRound();
-
-        int guard = 0;
-        while (guard < 3000) {
-            guard++;
-            if (turnController.playCurrentTurn()) {
-                return;
-            }
-        }
-
-        view.showSafetyLimitReached();
+        gameSessionController.playGame();
     }
 
     int chooseCardForCurrentPlayer() {
