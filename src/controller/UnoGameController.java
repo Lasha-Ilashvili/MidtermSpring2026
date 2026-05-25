@@ -26,7 +26,7 @@ public class UnoGameController {
         new UnoGameController(new UnoGame(), UiViewFactory.create(uiType)).runNewGame(uiType);
     }
 
-    void runNewGame(UiType uiType) {
+    private void runNewGame(UiType uiType) {
         Startup.Input startupInput = view.readStartupInput(uiType);
         view.setQuiet(startupInput.quiet());
 
@@ -46,56 +46,24 @@ public class UnoGameController {
         gameSessionController.showFinalScores();
     }
 
-    boolean handleStartupAction(Startup.Action action) {
+    private boolean handleStartupAction(Startup.Action action) {
         return startupActionHandler.handle(action);
     }
 
-    GameSettings startupSettings(Startup.Input startupInput) {
+    private GameSettings startupSettings(Startup.Input startupInput) {
         return GameSettings.from(startupInput);
     }
 
-    void setupGame(GameSettings settings) {
+    private void setupGame(GameSettings settings) {
         gameSessionController.setupGame(settings);
     }
 
-    void playGames(int games) {
+    private void playGames(int games) {
         gameSessionController.playGames(games);
     }
 
     void playGame() {
         gameSessionController.playGame();
-    }
-
-    int chooseCardForCurrentPlayer() {
-        return turnController.chooseCardForCurrentPlayer();
-    }
-
-    int chooseDrawnCardIfNeeded(int chosen, String playerName) {
-        return turnController.chooseDrawnCardIfNeeded(chosen, playerName);
-    }
-
-    boolean finishTurn(int chosen, String playerName) {
-        return turnController.finishTurn(chosen, playerName);
-    }
-
-    boolean penalizeInvalidSelection(int chosen, String playerName) {
-        return turnController.penalizeInvalidSelection(chosen, playerName);
-    }
-
-    void callColorIfNeeded(String card, String playerName) {
-        turnController.callColorIfNeeded(card, playerName);
-    }
-
-    void showUnoIfNeeded(String playerName) {
-        turnController.showUnoIfNeeded(playerName);
-    }
-
-    boolean scoreRoundIfFinished(String playerName) {
-        return turnController.scoreRoundIfFinished(playerName);
-    }
-
-    void showTurnEffect(UnoGame.TurnEffect effect) {
-        turnController.showTurnEffect(effect);
     }
 
     int askHuman() {
