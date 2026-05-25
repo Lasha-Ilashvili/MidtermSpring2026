@@ -62,7 +62,7 @@ final class PlayerPromptCharacterizationTests {
         return output.capture(() -> {
             game.setupPlayers(1, true);
             game.setCurrentPlayer(0);
-            game.currentHand().addAll(hand);
+            game.addCardsToCurrentHand(hand);
             return view.withInput(input, controller::askHuman);
         });
     }

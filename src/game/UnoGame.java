@@ -1,6 +1,7 @@
 package game;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class UnoGame {
@@ -111,8 +112,12 @@ public class UnoGame {
         return players.hand(player);
     }
 
-    public ArrayList<String> currentHand() {
+    ArrayList<String> currentHand() {
         return hand(currentPlayer());
+    }
+
+    public void addCardsToCurrentHand(List<String> cards) {
+        currentHand().addAll(cards);
     }
 
     public ArrayList<String> currentHandSnapshot() {
