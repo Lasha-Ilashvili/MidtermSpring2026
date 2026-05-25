@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import game.UnoGame;
 import ui.cli.CliView;
 
-final class ControllerCharacterizationTests {
+final class PlayerPromptCharacterizationTests {
 
     private final UnoGame game = new UnoGame();
     private final CliView view = new CliView();

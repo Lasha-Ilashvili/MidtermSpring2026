@@ -2,7 +2,7 @@ package controller;
 
 import ui.cli.CliView;
 
-final class ViewCharacterizationTests {
+final class CliCharacterizationTests {
 
     private final CliView view = new CliView();
 

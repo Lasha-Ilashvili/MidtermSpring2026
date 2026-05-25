@@ -3,7 +3,7 @@ package controller;
 import java.util.ArrayList;
 import game.UnoGame;
 
-final class ModelCharacterizationTests {
+final class GameCharacterizationTests {
 
     private final UnoGame game = new UnoGame();
 
