@@ -3,7 +3,7 @@ package model;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class Model {
+public class UnoGame {
 
     public enum EffectType {
         NONE,

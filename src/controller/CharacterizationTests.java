@@ -6,12 +6,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.function.Supplier;
-import model.Model;
+import model.UnoGame;
 import ui.cli.CLIEngine;
 
 final class CharacterizationTests {
 
-    private final Model model = new Model();
+    private final UnoGame model = new UnoGame();
     private final CLIEngine view = new CLIEngine();
     private final Controller controller = new Controller(model, view);
     private String selfTestCapturedOutput = "";

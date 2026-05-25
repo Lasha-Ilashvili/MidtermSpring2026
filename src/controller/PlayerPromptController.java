@@ -1,15 +1,15 @@
 package controller;
 
-import model.Model;
+import model.UnoGame;
 import ui.PlayerInput;
 import ui.UiView;
 
 final class PlayerPromptController {
 
-    private final Model model;
+    private final UnoGame model;
     private final UiView view;
 
-    PlayerPromptController(Model model, UiView view) {
+    PlayerPromptController(UnoGame model, UiView view) {
         this.model = model;
         this.view = view;
     }
@@ -27,7 +27,7 @@ final class PlayerPromptController {
                     return choice.index();
                 }
             } else {
-                Model.CardCodeChoice cardChoice = model.chooseCurrentCardByCode(choice.cardCode());
+                UnoGame.CardCodeChoice cardChoice = model.chooseCurrentCardByCode(choice.cardCode());
                 if (cardChoice.hasLegalMatch()) {
                     return cardChoice.index();
                 }

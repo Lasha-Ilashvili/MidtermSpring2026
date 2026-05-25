@@ -1,15 +1,15 @@
 package controller;
 
-import model.Model;
+import model.UnoGame;
 import ui.UiView;
 
 final class GameSessionController {
 
-    private final Model model;
+    private final UnoGame model;
     private final UiView view;
     private final TurnController turnController;
 
-    GameSessionController(Model model, UiView view, TurnController turnController) {
+    GameSessionController(UnoGame model, UiView view, TurnController turnController) {
         this.model = model;
         this.view = view;
         this.turnController = turnController;

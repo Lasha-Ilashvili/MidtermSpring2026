@@ -1,15 +1,15 @@
 package controller;
 
-import model.Model;
+import model.UnoGame;
 import ui.UiView;
 
 final class TurnController {
 
-    private final Model model;
+    private final UnoGame model;
     private final UiView view;
     private final PlayerPromptController playerPromptController;
 
-    TurnController(Model model, UiView view, PlayerPromptController playerPromptController) {
+    TurnController(UnoGame model, UiView view, PlayerPromptController playerPromptController) {
         this.model = model;
         this.view = view;
         this.playerPromptController = playerPromptController;
@@ -123,10 +123,10 @@ final class TurnController {
         return true;
     }
 
-    void showTurnEffect(Model.TurnEffect effect) {
-        if (effect.type() == Model.EffectType.DRAW_TWO) {
+    void showTurnEffect(UnoGame.TurnEffect effect) {
+        if (effect.type() == UnoGame.EffectType.DRAW_TWO) {
             view.showDrawTwoPenalty(effect.playerName());
-        } else if (effect.type() == Model.EffectType.DRAW_FOUR) {
+        } else if (effect.type() == UnoGame.EffectType.DRAW_FOUR) {
             view.showDrawFourPenalty(effect.playerName());
         }
     }

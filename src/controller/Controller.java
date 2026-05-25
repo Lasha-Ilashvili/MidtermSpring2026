@@ -1,6 +1,6 @@
 package controller;
 
-import model.Model;
+import model.UnoGame;
 import ui.Startup;
 import ui.UiType;
 import ui.UiView;
@@ -14,7 +14,7 @@ public class Controller {
     private final TurnController turnController;
     private final GameSessionController gameSessionController;
 
-    Controller(Model model, UiView view) {
+    Controller(UnoGame model, UiView view) {
         this.view = view;
         this.startupActionHandler = new StartupActionHandler(view);
         this.playerPromptController = new PlayerPromptController(model, view);
@@ -23,7 +23,7 @@ public class Controller {
     }
 
     public static void startNewGame(UiType uiType) {
-        new Controller(new Model(), UiViewFactory.create(uiType)).runNewGame(uiType);
+        new Controller(new UnoGame(), UiViewFactory.create(uiType)).runNewGame(uiType);
     }
 
     void runNewGame(UiType uiType) {
@@ -94,7 +94,7 @@ public class Controller {
         return turnController.scoreRoundIfFinished(playerName);
     }
 
-    void showTurnEffect(Model.TurnEffect effect) {
+    void showTurnEffect(UnoGame.TurnEffect effect) {
         turnController.showTurnEffect(effect);
     }
 
