@@ -1,9 +1,9 @@
-package model;
+package game;
 
 import java.util.ArrayList;
 import java.util.Random;
 
-public class Model {
+public class UnoGame {
 
     public enum EffectType {
         NONE,
@@ -263,38 +263,49 @@ public class Model {
     }
 
     public TurnEffect applyCardEffect(String card) {
-        if (rank(card).equals("SKIP")) {
+        return switch (CardRules.rankValue(card)) {
+            case SKIP -> skipNextPlayer();
+            case REVERSE -> reverseTurnOrder();
+            case DRAW_TWO -> drawCardsAndSkip(2, EffectType.DRAW_TWO);
+            case WILD_DRAW_FOUR -> drawCardsAndSkip(4, EffectType.DRAW_FOUR);
+            default -> advanceNormally();
+        };
+    }
+
+    private TurnEffect skipNextPlayer() {
+        advanceToNextPlayer();
+        advanceToNextPlayer();
+        return noVisibleEffect();
+    }
+
+    private TurnEffect reverseTurnOrder() {
+        reverseDirection();
+        if (playerCount() == 2) {
             advanceToNextPlayer();
             advanceToNextPlayer();
-            return new TurnEffect(EffectType.NONE, "");
-        } else if (rank(card).equals("REVERSE")) {
-            reverseDirection();
-            if (playerCount() == 2) {
-                advanceToNextPlayer();
-                advanceToNextPlayer();
-            } else {
-                advanceToNextPlayer();
-            }
-            return new TurnEffect(EffectType.NONE, "");
-        } else if (rank(card).equals("DRAW_TWO")) {
-            advanceToNextPlayer();
-            currentHand().add(draw());
-            currentHand().add(draw());
-            String penaltyPlayerName = currentPlayerName();
-            advanceToNextPlayer();
-            return new TurnEffect(EffectType.DRAW_TWO, penaltyPlayerName);
-        } else if (rank(card).equals("WILD_DRAW_FOUR")) {
-            advanceToNextPlayer();
-            for (int i = 0; i < 4; i++) {
-                currentHand().add(draw());
-            }
-            String penaltyPlayerName = currentPlayerName();
-            advanceToNextPlayer();
-            return new TurnEffect(EffectType.DRAW_FOUR, penaltyPlayerName);
         } else {
             advanceToNextPlayer();
-            return new TurnEffect(EffectType.NONE, "");
         }
+        return noVisibleEffect();
+    }
+
+    private TurnEffect drawCardsAndSkip(int cardCount, EffectType effectType) {
+        advanceToNextPlayer();
+        for (int i = 0; i < cardCount; i++) {
+            currentHand().add(draw());
+        }
+        String penaltyPlayerName = currentPlayerName();
+        advanceToNextPlayer();
+        return new TurnEffect(effectType, penaltyPlayerName);
+    }
+
+    private TurnEffect advanceNormally() {
+        advanceToNextPlayer();
+        return noVisibleEffect();
+    }
+
+    private TurnEffect noVisibleEffect() {
+        return new TurnEffect(EffectType.NONE, "");
     }
 
     public void clearDeck() {
@@ -347,10 +358,6 @@ public class Model {
 
     public int chooseBotCard(ArrayList<String> hand) {
         return BotStrategy.chooseBotCard(hand, upCard(), calledColor());
-    }
-
-    public int chooseFirstLegalCardByRank(ArrayList<String> hand, String targetRank) {
-        return BotStrategy.chooseFirstLegalCardByRank(hand, targetRank, upCard(), calledColor());
     }
 
     public String chooseBotColor(ArrayList<String> hand) {

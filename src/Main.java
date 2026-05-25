@@ -1,9 +1,9 @@
-import controller.Controller;
+import controller.UnoGameController;
 import ui.UiType;
 
 public class Main {
 
     public static void main(String[] args) {
-        Controller.startNewGame(new UiType.Cli(args));
+        UnoGameController.startNewGame(new UiType.Cli(args));
     }
 }

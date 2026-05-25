@@ -7,7 +7,7 @@ import ui.Startup;
 import ui.UiType;
 import ui.UiView;
 
-public class CLIEngine implements UiView {
+public class CliView implements UiView {
 
     private final CliStartupInputReader startupInputReader = new CliStartupInputReader();
     private final CliPlayerInputReader playerInputReader = new CliPlayerInputReader();

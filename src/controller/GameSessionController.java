@@ -1,27 +1,27 @@
 package controller;
 
-import model.Model;
+import game.UnoGame;
 import ui.UiView;
 
 final class GameSessionController {
 
-    private final Model model;
+    private final UnoGame game;
     private final UiView view;
     private final TurnController turnController;
 
-    GameSessionController(Model model, UiView view, TurnController turnController) {
-        this.model = model;
+    GameSessionController(UnoGame game, UiView view, TurnController turnController) {
+        this.game = game;
         this.view = view;
         this.turnController = turnController;
     }
 
     void setupGame(GameSettings settings) {
-        model.seedRandom(settings.seed());
-        model.setupPlayers(settings.bots(), settings.human());
+        game.seedRandom(settings.seed());
+        game.setupPlayers(settings.bots(), settings.human());
     }
 
     boolean isPlayerCountValid() {
-        return model.isPlayerCountValid();
+        return game.isPlayerCountValid();
     }
 
     void playGames(int games) {
@@ -32,7 +32,7 @@ final class GameSessionController {
     }
 
     void playGame() {
-        model.startRound();
+        game.startRound();
 
         int guard = 0;
         while (guard < 3000) {
@@ -46,6 +46,6 @@ final class GameSessionController {
     }
 
     void showFinalScores() {
-        view.showFinalScores(model.playerNamesSnapshot(), model.scoresSnapshot());
+        view.showFinalScores(game.playerNamesSnapshot(), game.scoresSnapshot());
     }
 }
