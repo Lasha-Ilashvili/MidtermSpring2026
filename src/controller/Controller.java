@@ -1,7 +1,6 @@
 package controller;
 
 import model.Model;
-import ui.PlayerInput;
 import ui.Startup;
 import ui.UiType;
 import ui.UiView;
@@ -12,11 +11,13 @@ public class Controller {
     private final Model model;
     private final UiView view;
     private final StartupActionHandler startupActionHandler;
+    private final PlayerPromptController playerPromptController;
 
     Controller(Model model, UiView view) {
         this.model = model;
         this.view = view;
         this.startupActionHandler = new StartupActionHandler(view);
+        this.playerPromptController = new PlayerPromptController(model, view);
     }
 
     public static void startNewGame(UiType uiType) {
@@ -190,38 +191,10 @@ public class Controller {
     }
 
     int askHuman() {
-        while (true) {
-            view.showChooseCardPrompt();
-            PlayerInput.CardChoice choice = view.readCardChoice();
-            if (choice.type() == PlayerInput.CardChoiceType.DRAW) {
-                return -1;
-            }
-
-            if (choice.type() == PlayerInput.CardChoiceType.INDEX) {
-                if (model.isCurrentHandIndex(choice.index())) {
-                    return choice.index();
-                }
-            } else {
-                Model.CardCodeChoice cardChoice = model.chooseCurrentCardByCode(choice.cardCode());
-                if (cardChoice.hasLegalMatch()) {
-                    return cardChoice.index();
-                }
-                for (int i = 0; i < cardChoice.illegalMatchCount(); i++) {
-                    view.showCardNotLegal();
-                }
-            }
-            view.showCardNotFound();
-        }
+        return playerPromptController.askHuman();
     }
 
     String askColor() {
-        while (true) {
-            view.showCallColorPrompt();
-            String input = view.readColorInput();
-            if (model.isPlayableColor(input)) {
-                return input;
-            }
-            view.showBadColor();
-        }
+        return playerPromptController.askColor();
     }
 }
