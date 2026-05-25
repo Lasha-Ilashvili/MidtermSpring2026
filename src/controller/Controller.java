@@ -11,10 +11,12 @@ public class Controller {
 
     private final Model model;
     private final UiView view;
+    private final StartupActionHandler startupActionHandler;
 
     Controller(Model model, UiView view) {
         this.model = model;
         this.view = view;
+        this.startupActionHandler = new StartupActionHandler(view);
     }
 
     public static void startNewGame(UiType uiType) {
@@ -42,17 +44,7 @@ public class Controller {
     }
 
     boolean handleStartupAction(Startup.Action action) {
-        if (action == Startup.Action.SELF_TEST) {
-            CharacterizationTests.run();
-            return true;
-        } else if (action == Startup.Action.HELP) {
-            view.showUsage();
-            return true;
-        } else if (action == Startup.Action.UNSUPPORTED_UI) {
-            view.showUnsupportedUiType();
-            return true;
-        }
-        return false;
+        return startupActionHandler.handle(action);
     }
 
     GameSettings startupSettings(Startup.Input startupInput) {
