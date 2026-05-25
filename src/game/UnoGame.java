@@ -48,11 +48,11 @@ public class UnoGame {
         return players.scoresSnapshot();
     }
 
-    public void clearScores() {
+    void clearScores() {
         players.clearScores();
     }
 
-    public int score(int player) {
+    int score(int player) {
         return players.score(player);
     }
 
