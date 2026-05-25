@@ -40,7 +40,7 @@ public class UnoGame {
         players.setup(bots, human);
     }
 
-    public ArrayList<String> playerNamesSnapshot() {
+    public List<String> playerNamesSnapshot() {
         return players.namesSnapshot();
     }
 
@@ -120,7 +120,7 @@ public class UnoGame {
         currentHand().addAll(cards);
     }
 
-    public ArrayList<String> currentHandSnapshot() {
+    public List<String> currentHandSnapshot() {
         return new ArrayList<>(currentHand());
     }
 
@@ -361,11 +361,11 @@ public class UnoGame {
         return CardRules.isWildCard(card);
     }
 
-    int chooseBotCard(ArrayList<String> hand) {
+    int chooseBotCard(List<String> hand) {
         return BotStrategy.chooseBotCard(hand, upCard(), calledColor());
     }
 
-    String chooseBotColor(ArrayList<String> hand) {
+    String chooseBotColor(List<String> hand) {
         return BotStrategy.chooseBotColor(hand);
     }
 
