@@ -38,10 +38,10 @@ The tests cover:
 * CLI hand display formatting
 * deterministic full-game score output for a fixed seed
 
-The tests are run through:
+The checks are integrated into JUnit Jupiter and run through Maven:
 
 ```bash
-scripts/test.sh
+mvn test
 ```
 
 The current expected result is:
@@ -136,7 +136,7 @@ Duplicated legal-play checks were reduced so bot choice and turn validation use 
 Controller responsibilities were split by orchestration concern:
 
 * `UnoGameController` starts and wires a new game.
-* `StartupActionHandler` handles help, self-test, and unsupported UI actions.
+* `StartupActionHandler` handles help and unsupported UI actions.
 * `GameSettings` converts startup input into typed runtime settings.
 * `GameSessionController` owns multi-game session flow and the safety limit loop.
 * `TurnController` owns one turn of gameplay.
@@ -158,7 +158,7 @@ After extraction, several cleanup passes made the package boundaries stricter:
 
 ## Git Strategy
 
-The work was organized as small refactoring branches and merged checkpoints:
+The midterm work was organized as small refactoring branches and merged checkpoints:
 
 * a characterization-test branch
 * a CI branch
@@ -169,7 +169,7 @@ The work was organized as small refactoring branches and merged checkpoints:
 * a cleanup branch for naming and surface improvements
 * a game-surface branch for stricter public API and test placement
 
-Commits were kept small and named with `chore:` because the work was behavior-preserving refactoring rather than feature work. Each meaningful refactoring step was followed by compile/test verification before the next step.
+Midterm refactoring commits were kept small and named with `chore:` because the work was behavior-preserving refactoring rather than feature work. Each meaningful refactoring step was followed by compile/test verification before the next step. The Assignment 4 continuation uses plain descriptive commit messages after Maven, logging, Docker, CI, and documentation verification gates.
 
 This branch strategy made it possible to stop after any checkpoint with a compiling, runnable project.
 
@@ -182,12 +182,13 @@ The workflow:
 * runs on `pull_request`
 * uses Ubuntu GitHub-hosted runners
 * installs Java 21 with Temurin
-* compiles using `sh scripts/compile.sh`
-* runs characterization tests using `sh scripts/test.sh`
+* caches Maven dependencies
+* runs `mvn --batch-mode --no-transfer-progress clean verify`
+* builds the Docker image only after Maven verification succeeds
 
 The CI intentionally does not run on every push. It runs when pull requests are opened or updated, which matches the branch-protection workflow and avoids unnecessary checks on local checkpoint pushes.
 
-The compile script was adjusted so the Java compiler uses `src` as the source path and compiles from `src/Main.java`. This keeps the project simple while still allowing package extraction.
+The project now follows Maven's standard `src/main/java` and `src/test/java` layout. The compatibility scripts delegate to Maven instead of maintaining a second compilation path.
 
 ## Behavior Intentionally Preserved
 
@@ -213,7 +214,7 @@ The design is much easier to change than the original, but a few risks remain:
 
 * `UnoGame` is still a broad facade because the controller needs a single game API during this refactoring stage.
 * Card codes still cross some public boundaries as strings because the CLI is text-based and the original behavior is based on compact text codes.
-* The tests are a custom self-test harness instead of JUnit, because the project intentionally stays dependency-free.
+* The original characterization helpers are preserved behind four JUnit bridge tests so Maven can discover them without rewriting their assertions.
 * Some game tests use package-private helpers so behavior can be characterized without widening production APIs.
 * Invalid numeric startup arguments still follow the original direct parse behavior rather than introducing a new validation flow.
 
@@ -221,12 +222,13 @@ These risks are known and documented rather than hidden. The current design is r
 
 ## Final Verification
 
-The final branch was verified with:
+The Maven and Docker continuation is verified with:
 
 ```bash
-scripts/compile.sh
-scripts/test.sh
-scripts/run.sh --bots 3 --games 5 --quiet --seed 123
+mvn clean verify
+java -jar target/uno-cli.jar --bots 3 --games 5 --quiet --seed 123
+docker build -t uno-cli .
+docker run --rm uno-cli --bots 3 --games 5 --quiet --seed 123
 ```
 
 The deterministic smoke run produced:

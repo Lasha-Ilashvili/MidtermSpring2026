@@ -66,7 +66,7 @@ Some parts are intentionally not fully generalized yet:
 * Card values still cross several boundaries as compact strings like `R5`, `G+2`, and `W4`.
 * `UnoGame` is still a broad facade that exposes the game operations needed by the controller.
 * UI messages are still specific to the current text-oriented game flow.
-* The project uses custom characterization checks instead of a full unit-test framework.
+* The project preserves custom characterization helpers behind a small JUnit bridge rather than rewriting every check as an individual test.
 
 These are acceptable remaining limits for this midterm refactor because the main goal was safe behavior-preserving separation, not a complete rewrite. The next clean extension pass would likely introduce typed card values in more public APIs and narrower game use-case methods.
 

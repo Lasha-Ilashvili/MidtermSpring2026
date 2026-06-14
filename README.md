@@ -1,26 +1,116 @@
-# Midterm UNO CLI
+# UNO CLI
 
-This is a standalone CLI UNO-like game.
+This repository contains a behavior-preserving refactor of the midterm UNO-like
+command-line game. The application targets Java 21, uses Maven for builds and
+tests, writes player-facing output to stdout, and writes diagnostic logs to
+stderr.
 
-The code is written as plausible feature-grown Java: almost everything lives in one procedural `Main` class. It works, but it has mixed responsibilities, duplicated rule logic, primitive-heavy card handling, global state, and condition-heavy gameplay code. The goal is to refactor it safely, not rewrite it.
+## Requirements
 
-## Compile
+Local Maven commands require:
+
+* JDK 21 or newer
+* Maven 3.9 or newer
+
+Docker commands require Docker Desktop or another running Docker engine. The
+Docker build supplies its own Maven and Java 21 environments, so the host does
+not need Maven or Java to run the containerized application.
+
+## Build And Test
+
+Compile the project:
 
 ```bash
-scripts/compile.sh
+mvn clean compile
 ```
 
-## Run Bot Games
+Run the JUnit suite and all 75 characterization checks:
 
 ```bash
-scripts/run.sh --bots 3 --games 5 --quiet
+mvn test
 ```
 
-## Run Interactive Game
+Create the self-contained executable JAR:
 
 ```bash
-scripts/run.sh --human --bots 2 --games 1
+mvn clean package
 ```
+
+The Maven Assembly Plugin writes the application and all runtime dependencies
+to:
+
+```text
+target/uno-cli.jar
+```
+
+## Run Locally
+
+Run through Maven from a clean terminal:
+
+```bash
+mvn compile exec:java -Dexec.args="--bots 3 --games 5 --quiet"
+```
+
+After compilation, the shorter equivalent is:
+
+```bash
+mvn exec:java -Dexec.args="--bots 3 --games 5 --quiet"
+```
+
+Run the packaged application:
+
+```bash
+java -jar target/uno-cli.jar --bots 3 --games 5 --quiet
+```
+
+Run an interactive game:
+
+```bash
+java -jar target/uno-cli.jar --human --bots 2 --games 1
+```
+
+## Docker
+
+Build the image:
+
+```bash
+docker build -t uno-cli .
+```
+
+Run the finite default bot game:
+
+```bash
+docker run --rm uno-cli
+```
+
+Override the default arguments:
+
+```bash
+docker run --rm uno-cli --bots 3 --games 5 --quiet --seed 123
+```
+
+Run an interactive game:
+
+```bash
+docker run --rm -it uno-cli --human --bots 2 --games 1
+```
+
+The image builds the Maven project in a Java 21 builder stage, then runs only
+`/app/uno-cli.jar` on a Java 21 JRE as an unprivileged user.
+
+## Command-Line Options
+
+| Option | Meaning |
+|---|---|
+| `--bots N` | Set the number of bot players. |
+| `--games N` | Set the number of games in the session. |
+| `--human` | Add a human player before the configured bots. |
+| `--quiet` | Hide turn-by-turn player output. |
+| `--seed N` | Use a deterministic random seed. |
+| `--help` | Print command usage. |
+
+UNO requires a total of two to four players. With `--human`, the bot count must
+leave room for the human player.
 
 Card input examples:
 
@@ -34,38 +124,35 @@ W4   wild draw four
 draw draw a card
 ```
 
-## Characterization Checks
+## Logging
+
+SLF4J with Logback records game starts, turns, played and drawn cards, invalid
+input, round endings, and session endings. Logs are written to stderr so normal
+CLI output remains readable on stdout.
+
+For example, capture the two streams separately:
 
 ```bash
-scripts/test.sh
+java -jar target/uno-cli.jar --bots 3 --games 1 --quiet > scores.txt 2> game.log
 ```
 
-## Submission
+## Optional Script Shortcuts
 
-Submit your work through GitHub:
+The legacy scripts remain available as Maven-backed shortcuts:
 
-1. Fork this repository to your GitHub account.
-2. Clone your fork locally.
-3. Complete the midterm work in your fork.
-4. Commit your changes with clear commit messages.
-5. Push your branch to GitHub.
-6. Open a pull request from your fork back to the original repository.
+```bash
+scripts/compile.sh
+scripts/test.sh
+scripts/run.sh --bots 3 --games 5 --quiet
+```
 
-Your pull request must include:
+Maven is the primary build system. GitHub Actions runs `mvn clean verify` and
+then builds the Docker image for pull requests.
 
-* refactored source code
-* characterization tests
-* `docs/refactoring-report.md`
-* `docs/extension-readiness.md`
+## Project Documentation
 
-Do not submit a zip file instead of a pull request unless the instructor explicitly asks for it.
-
-## Rules
-
-See `docs/rules.html` for the implemented game rules.
-
-## Midterm Materials
-
-* `docs/midterm-exam.md`: midterm brief
-* `docs/rubric.md`: grading rubric
-* `docs/refactoring-guide.md`: suggested refactoring path
+* `docs/rules.html`: implemented game rules
+* `docs/refactoring-report.md`: behavior-preserving refactoring history
+* `docs/extension-readiness.md`: supported extension points
+* `docs/midterm-exam.md`: original midterm brief
+* `docs/rubric.md`: original midterm rubric
