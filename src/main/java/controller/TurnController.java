@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ui.UiView;
 
+import java.util.Optional;
+
 final class TurnController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TurnController.class);
@@ -19,7 +21,7 @@ final class TurnController {
         this.playerPromptController = playerPromptController;
     }
 
-    boolean playCurrentTurn() {
+    Optional<RoundOutcome> playCurrentTurn() {
         String name = game.currentPlayerName();
 
         LOGGER.info("event=player_turn player={}", name);
@@ -59,14 +61,14 @@ final class TurnController {
         return chosen;
     }
 
-    boolean finishTurn(int chosen, String playerName) {
+    Optional<RoundOutcome> finishTurn(int chosen, String playerName) {
         if (chosen < 0) {
             game.advanceToNextPlayer();
-            return false;
+            return Optional.empty();
         }
 
         if (penalizeInvalidSelection(chosen, playerName)) {
-            return false;
+            return Optional.empty();
         }
 
         String card = game.currentHandCard(chosen);
@@ -77,12 +79,13 @@ final class TurnController {
         callColorIfNeeded(card, playerName);
         showUnoIfNeeded(playerName);
 
-        if (scoreRoundIfFinished(playerName)) {
-            return true;
+        Optional<RoundOutcome> outcome = scoreRoundIfFinished(playerName);
+        if (outcome.isPresent()) {
+            return outcome;
         }
 
         showTurnEffect(game.applyCardEffect(card));
-        return false;
+        return Optional.empty();
     }
 
     boolean penalizeInvalidSelection(int chosen, String playerName) {
@@ -124,15 +127,15 @@ final class TurnController {
         }
     }
 
-    boolean scoreRoundIfFinished(String playerName) {
+    Optional<RoundOutcome> scoreRoundIfFinished(String playerName) {
         if (!game.currentPlayerHasNoCards()) {
-            return false;
+            return Optional.empty();
         }
 
         int points = game.scoreCurrentPlayerFromOpponents();
         LOGGER.info("event=round_end winner={} points={}", playerName, points);
         view.showWinnerScore(playerName, points);
-        return true;
+        return Optional.of(RoundOutcome.completed(playerName, points));
     }
 
     void showTurnEffect(UnoGame.TurnEffect effect) {

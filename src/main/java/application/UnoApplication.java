@@ -1,6 +1,7 @@
 package application;
 
 import controller.UnoGameController;
+import history.GameHistoryWriter;
 import history.persistence.entity.GameEntity;
 import history.persistence.repository.GameRepository;
 import org.springframework.boot.ApplicationArguments;
@@ -22,8 +23,11 @@ public class UnoApplication {
     }
 
     @Bean
-    ApplicationRunner gameRunner() {
+    ApplicationRunner gameRunner(GameHistoryWriter gameHistoryWriter) {
         return (ApplicationArguments arguments) ->
-                UnoGameController.startNewGame(new UiType.Cli(arguments.getSourceArgs()));
+                UnoGameController.startNewGame(
+                        new UiType.Cli(arguments.getSourceArgs()),
+                        gameHistoryWriter
+                );
     }
 }

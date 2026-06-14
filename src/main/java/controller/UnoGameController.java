@@ -1,29 +1,52 @@
 package controller;
 
 import game.UnoGame;
+import history.CompletedGame;
+import history.GameHistoryWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ui.Startup;
 import ui.UiType;
 import ui.UiView;
 import ui.UiViewFactory;
 
+import java.time.Clock;
+
 public class UnoGameController {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UnoGameController.class);
+
     private final UiView view;
+    private final GameHistoryWriter gameHistoryWriter;
     private final StartupActionHandler startupActionHandler;
     private final PlayerPromptController playerPromptController;
     private final TurnController turnController;
     private final GameSessionController gameSessionController;
 
     UnoGameController(UnoGame game, UiView view) {
+        this(game, view, GameHistoryWriter.noOp(), Clock.systemUTC());
+    }
+
+    UnoGameController(UnoGame game, UiView view, GameHistoryWriter gameHistoryWriter, Clock clock) {
         this.view = view;
+        this.gameHistoryWriter = gameHistoryWriter;
         this.startupActionHandler = new StartupActionHandler(view);
         this.playerPromptController = new PlayerPromptController(game, view);
         this.turnController = new TurnController(game, view, playerPromptController);
-        this.gameSessionController = new GameSessionController(game, view, turnController);
+        this.gameSessionController = new GameSessionController(game, view, turnController, clock);
     }
 
     public static void startNewGame(UiType uiType) {
-        new UnoGameController(new UnoGame(), UiViewFactory.create(uiType)).runNewGame(uiType);
+        startNewGame(uiType, GameHistoryWriter.noOp());
+    }
+
+    public static void startNewGame(UiType uiType, GameHistoryWriter gameHistoryWriter) {
+        new UnoGameController(
+                new UnoGame(),
+                UiViewFactory.create(uiType),
+                gameHistoryWriter,
+                Clock.systemUTC()
+        ).runNewGame(uiType);
     }
 
     private void runNewGame(UiType uiType) {
@@ -42,8 +65,9 @@ public class UnoGameController {
             return;
         }
 
-        playGames(settings.games());
+        CompletedGame completedGame = playGames(settings.games());
         gameSessionController.showFinalScores();
+        saveGameHistory(completedGame);
     }
 
     private boolean handleStartupAction(Startup.Action action) {
@@ -58,8 +82,19 @@ public class UnoGameController {
         gameSessionController.setupGame(settings);
     }
 
-    private void playGames(int games) {
-        gameSessionController.playGames(games);
+    private CompletedGame playGames(int games) {
+        return gameSessionController.playGames(games);
+    }
+
+    private void saveGameHistory(CompletedGame completedGame) {
+        try {
+            gameHistoryWriter.save(completedGame);
+        } catch (RuntimeException exception) {
+            LOGGER.warn(
+                    "event=history_save_failed reason={}",
+                    exception.getClass().getSimpleName()
+            );
+        }
     }
 
     int askHuman() {
