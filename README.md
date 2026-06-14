@@ -1,9 +1,11 @@
 # UNO CLI
 
 This repository contains a behavior-preserving refactor of the midterm UNO-like
-command-line game. The application targets Java 21, uses Maven for builds and
-tests, writes player-facing output to stdout, and writes diagnostic logs to
-stderr.
+command-line game. It targets Java 21, uses Maven and Spring Data JPA, manages
+its schema with Flyway, and persists game history to H2 or PostgreSQL.
+
+Player-facing output is written to stdout. SLF4J and Logback diagnostics are
+written to stderr.
 
 ## Requirements
 
@@ -12,9 +14,8 @@ Local Maven commands require:
 * JDK 21 or newer
 * Maven 3.9 or newer
 
-Docker commands require Docker Desktop or another running Docker engine. The
-Docker build supplies its own Maven and Java 21 environments, so the host does
-not need Maven or Java to run the containerized application.
+Containerized PostgreSQL commands require Docker Desktop or another running
+Docker engine. Docker supplies its own Maven and Java 21 environments.
 
 ## Build And Test
 
@@ -24,43 +25,44 @@ Compile the project:
 mvn clean compile
 ```
 
-Run the JUnit suite and all 75 characterization checks:
+Run all tests, including the 75 characterization checks and isolated H2
+persistence tests:
 
 ```bash
-mvn test
+mvn clean verify
 ```
 
-Create the self-contained executable JAR:
+Create the self-contained executable Spring Boot JAR:
 
 ```bash
 mvn clean package
 ```
 
-The Maven Assembly Plugin writes the application and all runtime dependencies
-to:
+The artifact is:
 
 ```text
 target/uno-cli.jar
 ```
 
-## Run Locally
-
-Run through Maven from a clean terminal:
+The default Maven profile includes H2 for local development. The production
+profile excludes H2 and includes the PostgreSQL driver:
 
 ```bash
-mvn compile exec:java -Dexec.args="--bots 3 --games 5 --quiet"
+mvn -Pproduction clean package -DskipTests
 ```
 
-After compilation, the shorter equivalent is:
+## Run Locally With H2
+
+Run through Maven:
 
 ```bash
-mvn exec:java -Dexec.args="--bots 3 --games 5 --quiet"
+mvn compile exec:java -Dexec.args="--bots 3 --games 5 --quiet --seed 123"
 ```
 
-Run the packaged application:
+Run the packaged JAR:
 
 ```bash
-java -jar target/uno-cli.jar --bots 3 --games 5 --quiet
+java -jar target/uno-cli.jar --bots 3 --games 5 --quiet --seed 123
 ```
 
 Run an interactive game:
@@ -69,44 +71,95 @@ Run an interactive game:
 java -jar target/uno-cli.jar --human --bots 2 --games 1
 ```
 
-## Docker
+The local database is created automatically under `data/`. Flyway applies
+`src/main/resources/db/migration/V1__create_game_history.sql`, then Hibernate
+validates the entity mappings against that schema.
 
-Build the image:
+## History Reports
 
-```bash
-docker build -t uno-cli .
-```
-
-Run the finite default bot game:
+List the 10 most recent games:
 
 ```bash
-docker run --rm uno-cli
+java -jar target/uno-cli.jar --recent-games
 ```
 
-Override the default arguments:
+Set a result limit from 1 to 100:
 
 ```bash
-docker run --rm uno-cli --bots 3 --games 5 --quiet --seed 123
+java -jar target/uno-cli.jar --recent-games 5
+java -jar target/uno-cli.jar --highest-scores 10
 ```
 
-Run an interactive game:
+Show a case-insensitive player win count:
 
 ```bash
-docker run --rm -it uno-cli --human --bots 2 --games 1
+java -jar target/uno-cli.jar --player-wins "Bot2"
 ```
 
-The image builds the Maven project in a Java 21 builder stage, then runs only
-`/app/uno-cli.jar` on a Java 21 JRE as an unprivileged user.
+Report options are mutually exclusive and cannot be combined with gameplay
+options.
+
+## PostgreSQL With Docker
+
+Create a local environment file and replace the example password:
+
+```bash
+cp .env.example .env
+```
+
+Build the production image and start PostgreSQL 18:
+
+```bash
+docker compose build app
+docker compose up -d database
+```
+
+Run and persist a deterministic session:
+
+```bash
+docker compose run --rm app --bots 3 --games 5 --quiet --seed 123
+```
+
+Read the stored reports from later containers:
+
+```bash
+docker compose run --rm app --recent-games 10
+docker compose run --rm app --player-wins Bot2
+docker compose run --rm app --highest-scores 10
+```
+
+Inspect the schema directly with the default example database and user names:
+
+```bash
+docker compose exec database psql -U uno -d uno -c "\dt"
+docker compose exec database psql -U uno -d uno -c "SELECT * FROM uno_games ORDER BY completed_at DESC;"
+```
+
+Stop the services:
+
+```bash
+docker compose down
+```
+
+The named `uno-cli_uno-postgres-data` volume retains data across container
+recreation. To deliberately delete the database as well:
+
+```bash
+docker compose down --volumes
+```
 
 ## Command-Line Options
 
 | Option | Meaning |
 |---|---|
 | `--bots N` | Set the number of bot players. |
-| `--games N` | Set the number of games in the session. |
+| `--games N` | Set the number of rounds in the persisted session. |
 | `--human` | Add a human player before the configured bots. |
 | `--quiet` | Hide turn-by-turn player output. |
 | `--seed N` | Use a deterministic random seed. |
+| `--recent-games [N]` | List recent persisted sessions. |
+| `--player-wins NAME` | Show a player's persisted win count. |
+| `--highest-scores [N]` | List the highest final player scores. |
 | `--help` | Print command usage. |
 
 UNO requires a total of two to four players. With `--human`, the bot count must
@@ -124,13 +177,28 @@ W4   wild draw four
 draw draw a card
 ```
 
+## Persistence Design
+
+Spring Data JPA repository interfaces provide all application database access.
+Derived repository methods handle simple lookups and win counts. An annotated
+JPQL projection query handles the high-score report. Game and controller code
+contains no JDBC, `EntityManager`, row mapping, or raw SQL.
+
+Flyway owns schema creation. Hibernate uses `ddl-auto=validate` and never
+creates production tables. H2 is used for local development and isolated
+`@DataJpaTest` tests; PostgreSQL 18 is used by the production Docker profile.
+
+Database credentials are supplied through environment variables and `.env` is
+ignored by Git. See [docs/database.md](docs/database.md) for the schema,
+profiles, repository design, and test details.
+
 ## Logging
 
 SLF4J with Logback records game starts, turns, played and drawn cards, invalid
-input, round endings, and session endings. Logs are written to stderr so normal
-CLI output remains readable on stdout.
+input, round endings, session endings, and successful or failed history saves.
+Logs are written to stderr so normal CLI and report output remains on stdout.
 
-For example, capture the two streams separately:
+Capture the streams separately:
 
 ```bash
 java -jar target/uno-cli.jar --bots 3 --games 1 --quiet > scores.txt 2> game.log
@@ -138,19 +206,20 @@ java -jar target/uno-cli.jar --bots 3 --games 1 --quiet > scores.txt 2> game.log
 
 ## Optional Script Shortcuts
 
-The legacy scripts remain available as Maven-backed shortcuts:
+The legacy scripts remain Maven-backed shortcuts:
 
 ```bash
 scripts/compile.sh
 scripts/test.sh
-scripts/run.sh --bots 3 --games 5 --quiet
+scripts/run.sh --bots 3 --games 5 --quiet --seed 123
 ```
 
 Maven is the primary build system. GitHub Actions runs `mvn clean verify` and
-then builds the Docker image for pull requests.
+then builds the production Docker image for pull requests.
 
 ## Project Documentation
 
+* `docs/database.md`: persistence architecture, schema, setup, and reports
 * `docs/rules.html`: implemented game rules
 * `docs/refactoring-report.md`: behavior-preserving refactoring history
 * `docs/extension-readiness.md`: supported extension points
