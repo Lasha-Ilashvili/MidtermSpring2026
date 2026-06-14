@@ -20,4 +20,4 @@ COPY --from=build --chown=uno:uno /workspace/target/uno-cli.jar /app/uno-cli.jar
 USER uno
 
 ENTRYPOINT ["java", "-jar", "/app/uno-cli.jar"]
-CMD ["--bots", "3", "--games", "1", "--quiet"]
+CMD ["--bots", "3", "--games", "1", "--quiet", "--seed", "123"]
