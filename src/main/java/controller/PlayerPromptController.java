@@ -1,10 +1,14 @@
 package controller;
 
 import game.UnoGame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ui.PlayerInput;
 import ui.UiView;
 
 final class PlayerPromptController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PlayerPromptController.class);
 
     private final UnoGame game;
     private final UiView view;
@@ -26,10 +30,16 @@ final class PlayerPromptController {
                 if (game.isCurrentHandIndex(choice.index())) {
                     return choice.index();
                 }
+                LOGGER.info("event=invalid_input reason=card_not_found input_type=index index={}", choice.index());
             } else {
                 UnoGame.CardCodeChoice cardChoice = game.chooseCurrentCardByCode(choice.cardCode());
                 if (cardChoice.hasLegalMatch()) {
                     return cardChoice.index();
+                }
+                if (cardChoice.illegalMatchCount() > 0) {
+                    LOGGER.info("event=invalid_input reason=illegal_card_code");
+                } else {
+                    LOGGER.info("event=invalid_input reason=card_not_found input_type=card_code");
                 }
                 for (int i = 0; i < cardChoice.illegalMatchCount(); i++) {
                     view.showCardNotLegal();
@@ -46,6 +56,7 @@ final class PlayerPromptController {
             if (game.isPlayableColor(input)) {
                 return input;
             }
+            LOGGER.info("event=invalid_input reason=invalid_color");
             view.showBadColor();
         }
     }

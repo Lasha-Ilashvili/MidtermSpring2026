@@ -1,9 +1,13 @@
 package controller;
 
 import game.UnoGame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ui.UiView;
 
 final class GameSessionController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GameSessionController.class);
 
     private final UnoGame game;
     private final UiView view;
@@ -26,6 +30,7 @@ final class GameSessionController {
 
     void playGames(int games) {
         for (int gameCount = 1; gameCount <= games; gameCount++) {
+            LOGGER.info("event=game_start game={}", gameCount);
             view.showGameHeader(gameCount);
             playGame();
         }
@@ -42,10 +47,13 @@ final class GameSessionController {
             }
         }
 
+        LOGGER.info("event=round_end result=safety_limit");
         view.showSafetyLimitReached();
     }
 
     void showFinalScores() {
-        view.showFinalScores(game.playerNamesSnapshot(), game.scoresSnapshot());
+        var playerNames = game.playerNamesSnapshot();
+        LOGGER.info("event=session_end players={}", playerNames.size());
+        view.showFinalScores(playerNames, game.scoresSnapshot());
     }
 }
