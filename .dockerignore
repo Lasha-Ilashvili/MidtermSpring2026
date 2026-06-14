@@ -1,0 +1,9 @@
+.git
+.github
+.idea
+docs
+out
+scripts
+target
+*.iml
+*.log
