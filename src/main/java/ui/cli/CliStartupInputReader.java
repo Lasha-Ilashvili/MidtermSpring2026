@@ -35,9 +35,6 @@ final class CliStartupInputReader implements StartupInputReader {
                 isQuiet = true;
             } else if (args[i].equals("--seed") && hasNext) {
                 seed = args[++i];
-            } else if (args[i].equals("--self-test")) {
-                action = Startup.Action.SELF_TEST;
-                break;
             } else if (args[i].equals("--help")) {
                 action = Startup.Action.HELP;
                 break;

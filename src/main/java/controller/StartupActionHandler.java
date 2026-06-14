@@ -13,10 +13,6 @@ final class StartupActionHandler {
 
     boolean handle(Startup.Action action) {
         return switch (action) {
-            case SELF_TEST -> {
-                CharacterizationTests.run();
-                yield true;
-            }
             case HELP -> {
                 view.showUsage();
                 yield true;

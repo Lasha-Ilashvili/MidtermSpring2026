@@ -7,7 +7,6 @@ public final class Startup {
 
     public enum Action {
         START_GAME,
-        SELF_TEST,
         HELP,
         UNSUPPORTED_UI
     }
