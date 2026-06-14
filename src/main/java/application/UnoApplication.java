@@ -1,6 +1,7 @@
 package application;
 
 import controller.UnoGameController;
+import history.GameHistoryReader;
 import history.GameHistoryWriter;
 import history.persistence.entity.GameEntity;
 import history.persistence.repository.GameRepository;
@@ -23,11 +24,15 @@ public class UnoApplication {
     }
 
     @Bean
-    ApplicationRunner gameRunner(GameHistoryWriter gameHistoryWriter) {
+    ApplicationRunner gameRunner(
+            GameHistoryWriter gameHistoryWriter,
+            GameHistoryReader gameHistoryReader
+    ) {
         return (ApplicationArguments arguments) ->
                 UnoGameController.startNewGame(
                         new UiType.Cli(arguments.getSourceArgs()),
-                        gameHistoryWriter
+                        gameHistoryWriter,
+                        gameHistoryReader
                 );
     }
 }

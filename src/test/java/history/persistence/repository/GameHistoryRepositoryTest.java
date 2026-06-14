@@ -92,15 +92,17 @@ final class GameHistoryRepositoryTest {
                 List.of(new PlayerResult("Alice", 40, false), new PlayerResult("Bob", 90, true))
         );
 
-        List<GameEntity> recent = gameRepository.findAllByOrderByCompletedAtDesc(PageRequest.of(0, 1));
-        List<GamePlayerEntity> highest = gamePlayerRepository.findHighestScores(PageRequest.of(0, 3));
+        List<GameEntity> recent =
+                gameRepository.findAllByOrderByCompletedAtDescIdDesc(PageRequest.of(0, 1));
+        List<HighestScoreProjection> highest =
+                gamePlayerRepository.findHighestScores(PageRequest.of(0, 3));
 
         assertAll(
                 () -> assertEquals(1, gamePlayerRepository.countByPlayerNormalizedNameAndWinnerTrue("alice")),
                 () -> assertEquals(1, gamePlayerRepository.countByPlayerNormalizedNameAndWinnerTrue("bob")),
                 () -> assertEquals(Instant.parse("2026-06-15T12:00:00Z"), recent.getFirst().getCompletedAt()),
                 () -> assertEquals(List.of(90, 75, 40),
-                        highest.stream().map(GamePlayerEntity::getFinalScore).toList()),
+                        highest.stream().map(HighestScoreProjection::getScore).toList()),
                 () -> assertTrue(playerRepository.findByNormalizedName("alice").isPresent())
         );
     }

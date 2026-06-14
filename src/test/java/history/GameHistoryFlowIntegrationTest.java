@@ -60,13 +60,16 @@ final class GameHistoryFlowIntegrationTest {
         ));
 
         GameEntity game = gameRepository
-                .findAllByOrderByCompletedAtDesc(PageRequest.of(0, 1))
+                .findAllByOrderByCompletedAtDescIdDesc(PageRequest.of(0, 1))
                 .getFirst();
         Map<String, GamePlayerEntity> players = game.getPlayers().stream()
                 .collect(Collectors.toMap(
                         gamePlayer -> gamePlayer.getPlayer().getDisplayName(),
                         gamePlayer -> gamePlayer
                 ));
+        String recentGames = captureOutput(() -> runReport("--recent-games", "1"));
+        String playerWins = captureOutput(() -> runReport("--player-wins", "bot2"));
+        String highestScores = captureOutput(() -> runReport("--highest-scores", "3"));
 
         assertAll(
                 () -> assertTrue(output.contains("Bot1: 138")),
@@ -94,7 +97,21 @@ final class GameHistoryFlowIntegrationTest {
                 () -> assertTrue(players.get("Bot2").isWinner()),
                 () -> assertEquals(1, players.values().stream()
                         .filter(GamePlayerEntity::isWinner)
-                        .count())
+                        .count()),
+                () -> assertTrue(recentGames.contains("Recent games:")),
+                () -> assertTrue(recentGames.contains("winner: Bot2")),
+                () -> assertTrue(recentGames.contains("Bot1=138, Bot2=246, Bot3=98")),
+                () -> assertTrue(playerWins.contains("bot2 wins: 1")),
+                () -> assertTrue(highestScores.contains("Highest scores:")),
+                () -> assertTrue(highestScores.contains("Bot2: 246"))
+        );
+    }
+
+    private void runReport(String... args) {
+        UnoGameController.startNewGame(
+                new UiType.Cli(args),
+                GameHistoryWriter.noOp(),
+                gameHistoryService
         );
     }
 

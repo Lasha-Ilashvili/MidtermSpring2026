@@ -2,6 +2,8 @@ package ui.cli;
 
 import java.util.List;
 import java.util.function.Supplier;
+import history.HighScoreReport;
+import history.RecentGameReport;
 import ui.PlayerInput;
 import ui.Startup;
 import ui.UiType;
@@ -12,6 +14,7 @@ public class CliView implements UiView {
     private final CliStartupInputReader startupInputReader = new CliStartupInputReader();
     private final CliPlayerInputReader playerInputReader = new CliPlayerInputReader();
     private final CliGameView gameView = new CliGameView();
+    private final CliHistoryView historyView = new CliHistoryView();
 
     @Override
     public void setQuiet(boolean quiet) {
@@ -139,6 +142,26 @@ public class CliView implements UiView {
     @Override
     public void showFinalScores(List<String> playerNames, int[] scores) {
         gameView.showFinalScores(playerNames, scores);
+    }
+
+    @Override
+    public void showRecentGames(List<RecentGameReport> games) {
+        historyView.showRecentGames(games);
+    }
+
+    @Override
+    public void showPlayerWinCount(String playerName, long wins) {
+        historyView.showPlayerWinCount(playerName, wins);
+    }
+
+    @Override
+    public void showHighestScores(List<HighScoreReport> scores) {
+        historyView.showHighestScores(scores);
+    }
+
+    @Override
+    public void showInvalidReportArguments() {
+        historyView.showInvalidReportArguments();
     }
 
     @Override

@@ -7,8 +7,19 @@ public final class Startup {
 
     public enum Action {
         START_GAME,
+        SHOW_REPORT,
         HELP,
+        INVALID_ARGUMENTS,
         UNSUPPORTED_UI
+    }
+
+    public enum ReportType {
+        RECENT_GAMES,
+        PLAYER_WINS,
+        HIGHEST_SCORES
+    }
+
+    public record Report(ReportType type, String value) {
     }
 
     public record Input(
@@ -17,11 +28,12 @@ public final class Startup {
             boolean human,
             boolean quiet,
             String seed,
-            Action action
+            Action action,
+            Report report
     ) {
     }
 
     public static Input unsupportedUi() {
-        return new Input(null, null, false, false, null, Action.UNSUPPORTED_UI);
+        return new Input(null, null, false, false, null, Action.UNSUPPORTED_UI, null);
     }
 }

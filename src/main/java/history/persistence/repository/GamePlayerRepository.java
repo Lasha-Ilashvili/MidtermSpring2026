@@ -12,11 +12,17 @@ public interface GamePlayerRepository extends JpaRepository<GamePlayerEntity, Lo
     long countByPlayerNormalizedNameAndWinnerTrue(String normalizedName);
 
     @Query("""
-            select gamePlayer
+            select
+                gamePlayer.game.id as gameId,
+                gamePlayer.player.displayName as playerName,
+                gamePlayer.finalScore as score,
+                gamePlayer.game.completedAt as completedAt
             from GamePlayerEntity gamePlayer
-            join fetch gamePlayer.player
-            join fetch gamePlayer.game
-            order by gamePlayer.finalScore desc, gamePlayer.game.completedAt desc
+            order by
+                gamePlayer.finalScore desc,
+                gamePlayer.game.completedAt desc,
+                gamePlayer.game.id desc,
+                gamePlayer.playerOrder asc
             """)
-    List<GamePlayerEntity> findHighestScores(Pageable pageable);
+    List<HighestScoreProjection> findHighestScores(Pageable pageable);
 }

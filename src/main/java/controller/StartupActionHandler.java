@@ -21,7 +21,12 @@ final class StartupActionHandler {
                 view.showUnsupportedUiType();
                 yield true;
             }
-            case START_GAME -> false;
+            case INVALID_ARGUMENTS -> {
+                view.showInvalidReportArguments();
+                view.showUsage();
+                yield true;
+            }
+            case START_GAME, SHOW_REPORT -> false;
         };
     }
 }

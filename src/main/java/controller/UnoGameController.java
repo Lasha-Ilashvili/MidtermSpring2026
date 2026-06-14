@@ -2,6 +2,7 @@ package controller;
 
 import game.UnoGame;
 import history.CompletedGame;
+import history.GameHistoryReader;
 import history.GameHistoryWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,18 +19,32 @@ public class UnoGameController {
 
     private final UiView view;
     private final GameHistoryWriter gameHistoryWriter;
+    private final HistoryReportController historyReportController;
     private final StartupActionHandler startupActionHandler;
     private final PlayerPromptController playerPromptController;
     private final TurnController turnController;
     private final GameSessionController gameSessionController;
 
     UnoGameController(UnoGame game, UiView view) {
-        this(game, view, GameHistoryWriter.noOp(), Clock.systemUTC());
+        this(
+                game,
+                view,
+                GameHistoryWriter.noOp(),
+                GameHistoryReader.empty(),
+                Clock.systemUTC()
+        );
     }
 
-    UnoGameController(UnoGame game, UiView view, GameHistoryWriter gameHistoryWriter, Clock clock) {
+    UnoGameController(
+            UnoGame game,
+            UiView view,
+            GameHistoryWriter gameHistoryWriter,
+            GameHistoryReader gameHistoryReader,
+            Clock clock
+    ) {
         this.view = view;
         this.gameHistoryWriter = gameHistoryWriter;
+        this.historyReportController = new HistoryReportController(gameHistoryReader, view);
         this.startupActionHandler = new StartupActionHandler(view);
         this.playerPromptController = new PlayerPromptController(game, view);
         this.turnController = new TurnController(game, view, playerPromptController);
@@ -41,10 +56,19 @@ public class UnoGameController {
     }
 
     public static void startNewGame(UiType uiType, GameHistoryWriter gameHistoryWriter) {
+        startNewGame(uiType, gameHistoryWriter, GameHistoryReader.empty());
+    }
+
+    public static void startNewGame(
+            UiType uiType,
+            GameHistoryWriter gameHistoryWriter,
+            GameHistoryReader gameHistoryReader
+    ) {
         new UnoGameController(
                 new UnoGame(),
                 UiViewFactory.create(uiType),
                 gameHistoryWriter,
+                gameHistoryReader,
                 Clock.systemUTC()
         ).runNewGame(uiType);
     }
@@ -54,6 +78,9 @@ public class UnoGameController {
         view.setQuiet(startupInput.quiet());
 
         if (handleStartupAction(startupInput.action())) {
+            return;
+        }
+        if (historyReportController.handle(startupInput)) {
             return;
         }
 

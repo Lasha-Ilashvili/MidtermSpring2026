@@ -144,7 +144,14 @@ final class CliGameView implements GameView {
 
     @Override
     public void showUsage() {
-        System.out.println("Usage: java -jar target/uno-cli.jar [--bots N] [--games N] [--human] [--quiet] [--seed N] [--help]");
+        System.out.println("""
+                Usage:
+                  java -jar target/uno-cli.jar [--bots N] [--games N] [--human] [--quiet] [--seed N]
+                  java -jar target/uno-cli.jar --recent-games [N]
+                  java -jar target/uno-cli.jar --player-wins "PLAYER NAME"
+                  java -jar target/uno-cli.jar --highest-scores [N]
+                  java -jar target/uno-cli.jar --help
+                """);
     }
 
     @Override
