@@ -1,6 +1,8 @@
 .git
 .github
 .idea
+.env
+data
 docs
 out
 scripts
