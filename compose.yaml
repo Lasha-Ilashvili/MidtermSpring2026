@@ -1,4 +1,4 @@
-name: uno-cli
+name: uno-cli-a5
 
 services:
   database:
@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: ${UNO_DATABASE_NAME:-uno}
       POSTGRES_USER: ${UNO_DATABASE_USERNAME:-uno}
-      POSTGRES_PASSWORD: ${UNO_DATABASE_PASSWORD:?Set UNO_DATABASE_PASSWORD in .env}
+      POSTGRES_HOST_AUTH_METHOD: trust
     healthcheck:
       test:
         - CMD-SHELL
@@ -29,7 +29,7 @@ services:
     environment:
       UNO_DATABASE_URL: jdbc:postgresql://database:5432/${UNO_DATABASE_NAME:-uno}
       UNO_DATABASE_USERNAME: ${UNO_DATABASE_USERNAME:-uno}
-      UNO_DATABASE_PASSWORD: ${UNO_DATABASE_PASSWORD:?Set UNO_DATABASE_PASSWORD in .env}
+      UNO_DATABASE_PASSWORD: ${UNO_DATABASE_PASSWORD:-}
 
 volumes:
   uno-postgres-data:

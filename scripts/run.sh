@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 set -eu
 
-mvn package -DskipTests
-java -jar target/uno-cli.jar "$@"
+docker compose up -d --wait database
+docker compose run --rm --build app "$@"
 

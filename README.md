@@ -2,7 +2,7 @@
 
 This repository contains a behavior-preserving refactor of the midterm UNO-like
 command-line game. It targets Java 21, uses Maven and Spring Data JPA, manages
-its schema with Flyway, and persists game history to H2 or PostgreSQL.
+its schema with Flyway, and persists game history to PostgreSQL.
 
 Player-facing output is written to stdout. SLF4J and Logback diagnostics are
 written to stderr.
@@ -44,75 +44,75 @@ The artifact is:
 target/uno-cli.jar
 ```
 
-The default Maven profile includes H2 for local development. The production
-profile excludes H2 and includes the PostgreSQL driver:
+The application artifact includes the PostgreSQL runtime driver. H2 is scoped
+to tests only, so normal gameplay does not silently fall back to a local H2
+database.
+
+## Run With PostgreSQL
+
+The zero-configuration runtime path is Docker Compose. Compose starts
+PostgreSQL 18, waits for it to become healthy, builds the app image when
+needed, and runs the CLI against that database:
 
 ```bash
-mvn -Pproduction clean package -DskipTests
-```
-
-## Run Locally With H2
-
-Run through Maven:
-
-```bash
-mvn compile exec:java -Dexec.args="--bots 3 --games 5 --quiet --seed 123"
-```
-
-Run the packaged JAR:
-
-```bash
-java -jar target/uno-cli.jar --bots 3 --games 5 --quiet --seed 123
+scripts/run.sh --bots 3 --games 5 --quiet --seed 123
 ```
 
 Run an interactive game:
 
 ```bash
-java -jar target/uno-cli.jar --human --bots 2 --games 1
+scripts/run.sh --human --bots 2 --games 1
 ```
 
-The local database is created automatically under `data/`. Flyway applies
-`src/main/resources/db/migration/V1__create_game_history.sql`, then Hibernate
-validates the entity mappings against that schema.
+Direct JAR execution is still supported when a PostgreSQL database is already
+reachable and the standard environment variables are supplied:
+
+```bash
+UNO_DATABASE_URL=jdbc:postgresql://localhost:5432/uno \
+UNO_DATABASE_USERNAME=uno \
+java -jar target/uno-cli.jar --bots 3 --games 5 --quiet --seed 123
+```
+
+Flyway applies `src/main/resources/db/migration/V1__create_game_history.sql`,
+then Hibernate validates the entity mappings against that schema.
 
 ## History Reports
 
 List the 10 most recent games:
 
 ```bash
-java -jar target/uno-cli.jar --recent-games
+scripts/run.sh --recent-games
 ```
 
 Set a result limit from 1 to 100:
 
 ```bash
-java -jar target/uno-cli.jar --recent-games 5
-java -jar target/uno-cli.jar --highest-scores 10
+scripts/run.sh --recent-games 5
+scripts/run.sh --highest-scores 10
 ```
 
 Show a case-insensitive player win count:
 
 ```bash
-java -jar target/uno-cli.jar --player-wins "Bot2"
+scripts/run.sh --player-wins "Bot2"
 ```
 
 Report options are mutually exclusive and cannot be combined with gameplay
 options.
 
-## PostgreSQL With Docker
+## PostgreSQL With Docker Compose
 
-Create a local environment file and replace the example password:
-
-```bash
-cp .env.example .env
-```
-
-Build the production image and start PostgreSQL 18:
+Build the app image and start PostgreSQL 18:
 
 ```bash
 docker compose build app
 docker compose up -d database
 ```
+
+No `.env` file is required for the local Compose setup. PostgreSQL uses trust
+authentication on the private Compose network, and the database port is not
+published to the host. `.env.example` documents optional overrides for a custom
+database name, user, or external password-protected database.
 
 Run and persist a deterministic session:
 
@@ -141,7 +141,7 @@ Stop the services:
 docker compose down
 ```
 
-The named `uno-cli_uno-postgres-data` volume retains data across container
+The named `uno-cli-a5_uno-postgres-data` volume retains data across container
 recreation. To deliberately delete the database as well:
 
 ```bash
@@ -185,12 +185,12 @@ JPQL projection query handles the high-score report. Game and controller code
 contains no JDBC, `EntityManager`, row mapping, or raw SQL.
 
 Flyway owns schema creation. Hibernate uses `ddl-auto=validate` and never
-creates production tables. H2 is used for local development and isolated
-`@DataJpaTest` tests; PostgreSQL 18 is used by the production Docker profile.
+creates production tables. PostgreSQL 18 is used for runtime persistence. H2 is
+used only for isolated `@DataJpaTest` tests.
 
-Database credentials are supplied through environment variables and `.env` is
-ignored by Git. See [docs/database.md](docs/database.md) for the schema,
-profiles, repository design, and test details.
+Runtime database settings can be supplied through environment variables. See
+[docs/database.md](docs/database.md) for the schema, repository design, and
+test details.
 
 ## Logging
 
@@ -201,12 +201,14 @@ Logs are written to stderr so normal CLI and report output remains on stdout.
 Capture the streams separately:
 
 ```bash
-java -jar target/uno-cli.jar --bots 3 --games 1 --quiet > scores.txt 2> game.log
+docker compose build app
+docker compose up -d --wait database
+docker compose run --rm app --bots 3 --games 1 --quiet > scores.txt 2> game.log
 ```
 
 ## Optional Script Shortcuts
 
-The legacy scripts remain Maven-backed shortcuts:
+The scripts remain the shortest verified workflow:
 
 ```bash
 scripts/compile.sh
@@ -214,8 +216,8 @@ scripts/test.sh
 scripts/run.sh --bots 3 --games 5 --quiet --seed 123
 ```
 
-Maven is the primary build system. GitHub Actions runs `mvn clean verify` and
-then builds the production Docker image for pull requests.
+Maven is the primary build system for compilation and tests. GitHub Actions
+runs `mvn clean verify` and then builds the Docker image for pull requests.
 
 ## Project Documentation
 

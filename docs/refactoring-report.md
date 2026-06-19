@@ -226,9 +226,8 @@ The Maven and Docker continuation is verified with:
 
 ```bash
 mvn clean verify
-java -jar target/uno-cli.jar --bots 3 --games 5 --quiet --seed 123
-docker build -t uno-cli .
-docker run --rm uno-cli --bots 3 --games 5 --quiet --seed 123
+docker compose build app
+docker compose run --rm app --bots 3 --games 5 --quiet --seed 123
 ```
 
 The deterministic smoke run produced:

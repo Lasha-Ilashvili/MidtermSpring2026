@@ -8,39 +8,33 @@ The application uses:
 * Spring Data JPA repository interfaces
 * Hibernate as the JPA provider
 * Flyway for schema migrations
-* H2 for local development and isolated tests
-* PostgreSQL 18 for the production Docker environment
+* PostgreSQL 18 for runtime persistence
+* H2 for isolated persistence tests
 
 Application code does not bind SQL parameters or map result rows manually.
 Flyway migration files are the only raw SQL in the project.
 
-## Maven Profiles
+## Dependency Scopes
 
-The default `development` profile includes the H2 runtime driver:
+The normal application artifact includes PostgreSQL and Flyway's PostgreSQL
+database module as runtime dependencies:
 
 ```bash
-mvn clean verify
 mvn clean package
-java -jar target/uno-cli.jar --bots 3 --games 5 --quiet --seed 123
 ```
 
-The `production` profile excludes H2 and includes PostgreSQL plus Flyway's
-PostgreSQL database module:
-
-```bash
-mvn -Pproduction clean package -DskipTests
-```
-
-Runtime production configuration uses:
+H2 is scoped to tests only. It is used by `@DataJpaTest` and does not act as a
+fallback for normal gameplay. Runtime database configuration uses:
 
 ```text
-SPRING_PROFILES_ACTIVE=production
 UNO_DATABASE_URL
 UNO_DATABASE_USERNAME
 UNO_DATABASE_PASSWORD
 ```
 
-No production credential is stored in source control.
+`scripts/run.sh` and Docker Compose provide these settings for the bundled
+PostgreSQL service. Direct JAR execution should set them explicitly when using
+an external database.
 
 ## Schema Management
 
@@ -153,12 +147,6 @@ Tests do not require Docker, PostgreSQL, or developer-specific machine state.
 
 ## Docker PostgreSQL
 
-Create `.env` from `.env.example` and set a local password:
-
-```bash
-cp .env.example .env
-```
-
 Build and start the database:
 
 ```bash
@@ -167,9 +155,23 @@ docker compose up -d database
 ```
 
 The official PostgreSQL 18 image stores data under `/var/lib/postgresql`.
-Compose mounts the named `uno-cli_uno-postgres-data` volume there.
+Compose mounts the named `uno-cli-a5_uno-postgres-data` volume there.
+
+No `.env` file is required for the default local setup. The database uses trust
+authentication on the private Compose network and does not publish a host port.
+For a password-protected external database, set `UNO_DATABASE_URL`,
+`UNO_DATABASE_USERNAME`, and `UNO_DATABASE_PASSWORD` before running the app.
 
 Run a game and reports:
+
+```bash
+scripts/run.sh --bots 3 --games 5 --quiet --seed 123
+scripts/run.sh --recent-games 10
+scripts/run.sh --player-wins Bot2
+scripts/run.sh --highest-scores 10
+```
+
+The equivalent raw Compose commands are:
 
 ```bash
 docker compose run --rm app --bots 3 --games 5 --quiet --seed 123

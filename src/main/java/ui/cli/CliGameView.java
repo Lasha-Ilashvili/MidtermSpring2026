@@ -146,11 +146,11 @@ final class CliGameView implements GameView {
     public void showUsage() {
         System.out.println("""
                 Usage:
-                  java -jar target/uno-cli.jar [--bots N] [--games N] [--human] [--quiet] [--seed N]
-                  java -jar target/uno-cli.jar --recent-games [N]
-                  java -jar target/uno-cli.jar --player-wins "PLAYER NAME"
-                  java -jar target/uno-cli.jar --highest-scores [N]
-                  java -jar target/uno-cli.jar --help
+                  scripts/run.sh [--bots N] [--games N] [--human] [--quiet] [--seed N]
+                  scripts/run.sh --recent-games [N]
+                  scripts/run.sh --player-wins "PLAYER NAME"
+                  scripts/run.sh --highest-scores [N]
+                  scripts/run.sh --help
                 """);
     }
 
