@@ -52,7 +52,20 @@ database.
 
 The zero-configuration runtime path is Docker Compose. Compose starts
 PostgreSQL 18, waits for it to become healthy, builds the app image when
-needed, and runs the CLI against that database:
+needed, runs a deterministic five-round game, then runs all three persisted
+history reports required by Assignment 5:
+
+```bash
+docker compose up --build --abort-on-container-exit --exit-code-from app app
+```
+
+The same full demo is available through the script wrapper:
+
+```bash
+scripts/run.sh
+```
+
+Run a custom game:
 
 ```bash
 scripts/run.sh --bots 3 --games 5 --quiet --seed 123
@@ -118,6 +131,12 @@ Run and persist a deterministic session:
 
 ```bash
 docker compose run --rm app --bots 3 --games 5 --quiet --seed 123
+```
+
+Run the complete assignment demo from Compose:
+
+```bash
+docker compose up --build --abort-on-container-exit --exit-code-from app app
 ```
 
 Read the stored reports from later containers:
@@ -213,7 +232,7 @@ The scripts remain the shortest verified workflow:
 ```bash
 scripts/compile.sh
 scripts/test.sh
-scripts/run.sh --bots 3 --games 5 --quiet --seed 123
+scripts/run.sh
 ```
 
 Maven is the primary build system for compilation and tests. GitHub Actions

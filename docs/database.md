@@ -162,9 +162,20 @@ authentication on the private Compose network and does not publish a host port.
 For a password-protected external database, set `UNO_DATABASE_URL`,
 `UNO_DATABASE_USERNAME`, and `UNO_DATABASE_PASSWORD` before running the app.
 
-Run a game and reports:
+Run the complete Assignment 4 and 5 Docker demonstration:
 
 ```bash
+docker compose up --build --abort-on-container-exit --exit-code-from app app
+```
+
+This builds the image if needed, starts PostgreSQL, runs the deterministic
+five-round bot game, and then runs all three report queries against the same
+database.
+
+Run individual games and reports:
+
+```bash
+scripts/run.sh
 scripts/run.sh --bots 3 --games 5 --quiet --seed 123
 scripts/run.sh --recent-games 10
 scripts/run.sh --player-wins Bot2

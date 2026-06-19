@@ -16,10 +16,13 @@ RUN groupadd --gid 10001 uno \
     && useradd --uid 10001 --gid uno --no-create-home --shell /usr/sbin/nologin uno
 
 COPY --from=build --chown=uno:uno /workspace/target/uno-cli.jar /app/uno-cli.jar
+COPY --chown=uno:uno docker/entrypoint.sh /app/entrypoint.sh
+
+RUN chmod +x /app/entrypoint.sh
 
 USER uno
 
 ENV SPRING_PROFILES_ACTIVE=production
 
-ENTRYPOINT ["java", "-jar", "/app/uno-cli.jar"]
-CMD ["--bots", "3", "--games", "1", "--quiet", "--seed", "123"]
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["demo"]
