@@ -141,6 +141,14 @@ public class UnoGame {
         return currentHand().isEmpty();
     }
 
+    public boolean shouldCurrentPlayerReceiveMissedUnoPenalty(boolean unoCalled) {
+        return currentPlayerHasOneCard() && isHumanCurrentPlayer() && !unoCalled;
+    }
+
+    public boolean shouldShowUnoForCurrentPlayer(boolean unoCalled) {
+        return currentPlayerHasOneCard() && (!isHumanCurrentPlayer() || unoCalled);
+    }
+
     public String currentHandCard(int index) {
         return currentHand().get(index);
     }
@@ -187,6 +195,11 @@ public class UnoGame {
     public void drawPenaltyAndAdvanceCurrentPlayer() {
         currentHand().add(draw());
         advanceToNextPlayer();
+    }
+
+    public void drawMissedUnoPenaltyForCurrentPlayer() {
+        currentHand().add(draw());
+        currentHand().add(draw());
     }
 
     public void playCardFromCurrentHand(int chosen) {

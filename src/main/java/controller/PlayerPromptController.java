@@ -18,23 +18,23 @@ final class PlayerPromptController {
         this.view = view;
     }
 
-    int askHuman() {
+    TurnSelection askHumanSelection() {
         while (true) {
             view.showChooseCardPrompt();
             PlayerInput.CardChoice choice = view.readCardChoice();
             if (choice.type() == PlayerInput.CardChoiceType.DRAW) {
-                return -1;
+                return TurnSelection.draw();
             }
 
             if (choice.type() == PlayerInput.CardChoiceType.INDEX) {
                 if (game.isCurrentHandIndex(choice.index())) {
-                    return choice.index();
+                    return new TurnSelection(choice.index(), choice.unoCalled());
                 }
                 LOGGER.info("event=invalid_input reason=card_not_found input_type=index index={}", choice.index());
             } else {
                 UnoGame.CardCodeChoice cardChoice = game.chooseCurrentCardByCode(choice.cardCode());
                 if (cardChoice.hasLegalMatch()) {
-                    return cardChoice.index();
+                    return new TurnSelection(cardChoice.index(), choice.unoCalled());
                 }
                 if (cardChoice.illegalMatchCount() > 0) {
                     LOGGER.info("event=invalid_input reason=illegal_card_code");
@@ -47,6 +47,10 @@ final class PlayerPromptController {
             }
             view.showCardNotFound();
         }
+    }
+
+    int askHuman() {
+        return askHumanSelection().index();
     }
 
     String askColor() {

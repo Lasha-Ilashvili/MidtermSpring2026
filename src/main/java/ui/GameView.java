@@ -20,6 +20,8 @@ public interface GameView {
 
     void showUno(String playerName);
 
+    void showMissedUnoPenalty(String playerName);
+
     void showWinnerScore(String playerName, int points);
 
     void showDrawTwoPenalty(String playerName);

@@ -70,6 +70,11 @@ public class CliView implements UiView {
     }
 
     @Override
+    public void showMissedUnoPenalty(String playerName) {
+        gameView.showMissedUnoPenalty(playerName);
+    }
+
+    @Override
     public void showWinnerScore(String playerName, int points) {
         gameView.showWinnerScore(playerName, points);
     }
@@ -167,6 +172,11 @@ public class CliView implements UiView {
     @Override
     public boolean readPlayDrawnCardDecision() {
         return playerInputReader.readPlayDrawnCardDecision();
+    }
+
+    @Override
+    public PlayerInput.DrawnCardDecision readPlayDrawnCardChoice() {
+        return playerInputReader.readPlayDrawnCardChoice();
     }
 
     @Override

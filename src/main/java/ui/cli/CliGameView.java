@@ -81,6 +81,14 @@ final class CliGameView implements GameView {
     }
 
     @Override
+    public void showMissedUnoPenalty(String playerName) {
+        if (quiet) {
+            return;
+        }
+        System.out.println(playerName + " forgot UNO and draws two.");
+    }
+
+    @Override
     public void showWinnerScore(String playerName, int points) {
         if (quiet) {
             return;

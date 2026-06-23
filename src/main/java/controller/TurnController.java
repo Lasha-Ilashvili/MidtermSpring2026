@@ -27,22 +27,22 @@ final class TurnController {
         LOGGER.info("event=player_turn player={}", name);
         view.showTurn(name, game.currentHandSnapshot(), game.upCard(), game.calledColor());
 
-        int chosen = chooseCardForCurrentPlayer();
-        chosen = chooseDrawnCardIfNeeded(chosen, name);
+        TurnSelection selection = chooseCardForCurrentPlayer();
+        selection = chooseDrawnCardIfNeeded(selection, name);
 
-        return finishTurn(chosen, name);
+        return finishTurn(selection, name);
     }
 
-    int chooseCardForCurrentPlayer() {
+    TurnSelection chooseCardForCurrentPlayer() {
         if (game.isHumanCurrentPlayer()) {
-            return playerPromptController.askHuman();
+            return playerPromptController.askHumanSelection();
         }
-        return game.chooseCurrentBotCard();
+        return new TurnSelection(game.chooseCurrentBotCard(), true);
     }
 
-    int chooseDrawnCardIfNeeded(int chosen, String playerName) {
-        if (chosen != -1) {
-            return chosen;
+    TurnSelection chooseDrawnCardIfNeeded(TurnSelection selection, String playerName) {
+        if (selection.index() != -1) {
+            return selection;
         }
 
         String drawn = game.drawForCurrentPlayer();
@@ -50,18 +50,20 @@ final class TurnController {
         view.showCardDrawn(playerName, drawn);
 
         if (game.shouldCurrentPlayerAutoPlayDrawnCard(drawn)) {
-            return game.lastCurrentHandIndex();
+            return new TurnSelection(game.lastCurrentHandIndex(), true);
         }
         if (game.shouldAskCurrentPlayerToPlayDrawnCard(drawn)) {
             view.showPlayDrawnCardPrompt(drawn);
-            if (view.readPlayDrawnCardDecision()) {
-                return game.lastCurrentHandIndex();
+            var decision = view.readPlayDrawnCardChoice();
+            if (decision.play()) {
+                return new TurnSelection(game.lastCurrentHandIndex(), decision.unoCalled());
             }
         }
-        return chosen;
+        return selection;
     }
 
-    Optional<RoundOutcome> finishTurn(int chosen, String playerName) {
+    Optional<RoundOutcome> finishTurn(TurnSelection selection, String playerName) {
+        int chosen = selection.index();
         if (chosen < 0) {
             game.advanceToNextPlayer();
             return Optional.empty();
@@ -77,7 +79,7 @@ final class TurnController {
         view.showCardPlayed(playerName, card);
 
         callColorIfNeeded(card, playerName);
-        showUnoIfNeeded(playerName);
+        applyUnoIfNeeded(playerName, selection.unoCalled());
 
         Optional<RoundOutcome> outcome = scoreRoundIfFinished(playerName);
         if (outcome.isPresent()) {
@@ -121,8 +123,14 @@ final class TurnController {
         view.showColorCalled(playerName, game.calledColor());
     }
 
-    void showUnoIfNeeded(String playerName) {
-        if (game.currentPlayerHasOneCard()) {
+    void applyUnoIfNeeded(String playerName, boolean unoCalled) {
+        if (game.shouldCurrentPlayerReceiveMissedUnoPenalty(unoCalled)) {
+            LOGGER.info("event=card_drawn player={} reason=missed_uno count=2", playerName);
+            view.showMissedUnoPenalty(playerName);
+            game.drawMissedUnoPenaltyForCurrentPlayer();
+            return;
+        }
+        if (game.shouldShowUnoForCurrentPlayer(unoCalled)) {
             view.showUno(playerName);
         }
     }

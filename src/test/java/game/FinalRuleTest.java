@@ -123,6 +123,31 @@ final class FinalRuleTest {
         assertEquals(174, score);
     }
 
+    @Test
+    void missedUnoPenaltyIsHandledByTheModel() {
+        UnoGame game = new UnoGame();
+        game.setupPlayers(1, true);
+        game.setCurrentPlayer(0);
+        game.setUpCard("R5");
+        game.clearCalledColor();
+        game.hand(game.currentPlayer()).add("R9");
+        game.hand(game.currentPlayer()).add("B2");
+        game.clearDeck();
+        game.clearDiscard();
+        game.addToDeck("G1");
+        game.addToDeck("Y2");
+
+        game.playCardFromCurrentHand(0);
+
+        assertTrue(game.shouldCurrentPlayerReceiveMissedUnoPenalty(false));
+        assertFalse(game.shouldCurrentPlayerReceiveMissedUnoPenalty(true));
+        assertTrue(game.shouldShowUnoForCurrentPlayer(true));
+
+        game.drawMissedUnoPenaltyForCurrentPlayer();
+
+        assertEquals(3, game.hand(game.currentPlayer()).size());
+    }
+
     private Map<String, Integer> drawAllCards(UnoGame game) {
         Map<String, Integer> counts = new HashMap<>();
         int cards = game.deckSize();

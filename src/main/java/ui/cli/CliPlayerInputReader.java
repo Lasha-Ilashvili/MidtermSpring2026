@@ -13,20 +13,27 @@ final class CliPlayerInputReader implements PlayerInputReader {
 
     @Override
     public boolean readPlayDrawnCardDecision() {
-        String input = scanner.nextLine();
-        return input.equalsIgnoreCase("y") || input.equalsIgnoreCase("yes");
+        return readPlayDrawnCardChoice().play();
+    }
+
+    @Override
+    public PlayerInput.DrawnCardDecision readPlayDrawnCardChoice() {
+        ParsedUnoInput input = parseUnoSuffix(scanner.nextLine());
+        boolean play = input.value().equalsIgnoreCase("y") || input.value().equalsIgnoreCase("yes");
+        return new PlayerInput.DrawnCardDecision(play, input.unoCalled());
     }
 
     @Override
     public PlayerInput.CardChoice readCardChoice() {
-        String input = scanner.nextLine().trim().toUpperCase();
+        ParsedUnoInput parsed = parseUnoSuffix(scanner.nextLine());
+        String input = parsed.value().toUpperCase();
         if (input.equals("DRAW")) {
             return PlayerInput.CardChoice.draw();
         }
         try {
-            return PlayerInput.CardChoice.index(Integer.parseInt(input));
+            return PlayerInput.CardChoice.index(Integer.parseInt(input), parsed.unoCalled());
         } catch (Exception ignored) {
-            return PlayerInput.CardChoice.cardCode(input);
+            return PlayerInput.CardChoice.cardCode(input, parsed.unoCalled());
         }
     }
 
@@ -43,5 +50,17 @@ final class CliPlayerInputReader implements PlayerInputReader {
         } finally {
             this.scanner = originalScanner;
         }
+    }
+
+    private ParsedUnoInput parseUnoSuffix(String input) {
+        String trimmed = input.trim();
+        String[] parts = trimmed.split("\\s+");
+        if (parts.length > 1 && parts[parts.length - 1].equalsIgnoreCase("UNO")) {
+            return new ParsedUnoInput(parts[0], true);
+        }
+        return new ParsedUnoInput(trimmed, false);
+    }
+
+    private record ParsedUnoInput(String value, boolean unoCalled) {
     }
 }
