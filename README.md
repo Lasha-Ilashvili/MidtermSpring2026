@@ -1,7 +1,7 @@
 # UNO CLI
 
-This repository contains a behavior-preserving refactor of the midterm UNO-like
-command-line game. It targets Java 21, uses Maven and Spring Data JPA, manages
+This repository contains a final-project UNO command-line game built from the
+midterm refactor. It targets Java 21, uses Maven and Spring Data JPA, manages
 its schema with Flyway, and persists game history to PostgreSQL.
 
 Player-facing output is written to stdout. SLF4J and Logback diagnostics are
@@ -52,8 +52,8 @@ database.
 
 The zero-configuration runtime path is Docker Compose. Compose starts
 PostgreSQL 18, waits for it to become healthy, builds the app image when
-needed, runs a deterministic five-round game, then runs all three persisted
-history reports required by Assignment 5:
+needed, runs a deterministic five-round game, runs a target-score game, then
+runs all persisted history reports required by Assignment 5:
 
 ```bash
 docker compose up --build --abort-on-container-exit --exit-code-from app app
@@ -69,6 +69,12 @@ Run a custom game:
 
 ```bash
 scripts/run.sh --bots 3 --games 5 --quiet --seed 123
+```
+
+Run a target-score match:
+
+```bash
+scripts/run.sh --bots 3 --target-score 500 --quiet --seed 123
 ```
 
 Run an interactive game:
@@ -139,6 +145,9 @@ Run the complete assignment demo from Compose:
 docker compose up --build --abort-on-container-exit --exit-code-from app app
 ```
 
+The demo persists two sessions: the original deterministic five-round session
+and a final-project target-score session.
+
 Read the stored reports from later containers:
 
 ```bash
@@ -173,6 +182,7 @@ docker compose down --volumes
 |---|---|
 | `--bots N` | Set the number of bot players. |
 | `--games N` | Set the number of rounds in the persisted session. |
+| `--target-score N` | Play until a player reaches N points. With `--games`, the value is the maximum round cap; without `--games`, the cap is 100 rounds. |
 | `--human` | Add a human player before the configured bots. |
 | `--quiet` | Hide turn-by-turn player output. |
 | `--seed N` | Use a deterministic random seed. |
@@ -195,6 +205,17 @@ W    wild
 W4   wild draw four
 draw draw a card
 ```
+
+To call UNO, append `uno` to a play:
+
+```text
+3 uno
+R5 uno
+yes uno
+```
+
+If a human player reaches one card without calling UNO, they immediately draw
+two penalty cards. Bots call UNO automatically.
 
 ## Persistence Design
 
@@ -241,6 +262,8 @@ runs `mvn clean verify` and then builds the Docker image for pull requests.
 ## Project Documentation
 
 * `docs/database.md`: persistence architecture, schema, setup, and reports
+* `docs/rules-supported.md`: final-project UNO rule support and simplifications
+* `docs/final-report.md`: final-project implementation report
 * `docs/rules.html`: implemented game rules
 * `docs/refactoring-report.md`: behavior-preserving refactoring history
 * `docs/extension-readiness.md`: supported extension points

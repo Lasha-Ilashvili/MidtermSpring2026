@@ -480,7 +480,7 @@
       <ol>
         <li>Look at the up card.</li>
         <li>Look at your hand. Cards are shown as <code>index:card</code>, such as <code>1:R9</code>.</li>
-        <li>Play one legal card by typing its index or card code, or type <code>draw</code>.</li>
+        <li>Play one legal card by typing its index or card code, or type <code>draw</code>. If the play leaves you with one card, append <code>uno</code>, such as <code>1 uno</code> or <code>R9 uno</code>.</li>
         <li>If you draw a card and it is playable, a human player may play it immediately. Bot players always play a drawn card automatically when it is legal.</li>
         <li>If you play an action card, its effect happens.</li>
         <li>The turn moves to the next player.</li>
@@ -492,6 +492,10 @@
 
       <div class="rule-box">
         You may type <code>draw</code> on any human turn, even if you have a card you could legally play. The game does not enforce a must-play rule.
+      </div>
+
+      <div class="rule-box">
+        If a human player reaches one card and does not append <code>uno</code> to that play, they immediately draw two penalty cards. Bots call UNO automatically.
       </div>
 
       <pre><code>Up card: R5
@@ -535,7 +539,7 @@ Choose card index/code or draw:</code></pre>
 
     <section>
       <h2>Winning And Scoring</h2>
-      <p>The first player to play their last card wins the game. When a player has one card left, the game prints an UNO message automatically.</p>
+      <p>The first player to play their last card wins the round. Bots call UNO automatically when they have one card left. Human players must append <code>uno</code> to the play that leaves one card, or they immediately draw two penalty cards.</p>
 
       <table>
         <thead>
@@ -550,6 +554,8 @@ Choose card index/code or draw:</code></pre>
 
       <p>If the losing players still hold <code>R5</code>, <code>B9</code>, <code>GS</code>, and <code>W</code>, the winner scores:</p>
       <pre><code>5 + 9 + 20 + 50 = 84 points</code></pre>
+
+      <p>Use <code>--games N</code> to play exactly N rounds. Use <code>--target-score N</code> to keep playing until a player reaches that score. When both are supplied, <code>--games</code> is the maximum round cap.</p>
     </section>
 
     <section>
@@ -568,11 +574,9 @@ Choose card index/code or draw:</code></pre>
       <p>This is a simplified teaching version. It does not implement every official or house rule.</p>
       <ul>
         <li>challenging Wild Draw Four</li>
-        <li>penalty for failing to say UNO</li>
         <li>stacking draw cards</li>
         <li>jump-in</li>
         <li>7-0 rule</li>
-        <li>official target score, such as 500</li>
         <li>forcing a human player to play a card they just drew</li>
         <li>multiple human players in one game</li>
         <li>saved match configuration</li>

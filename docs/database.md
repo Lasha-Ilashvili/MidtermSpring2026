@@ -42,6 +42,7 @@ Flyway automatically applies:
 
 ```text
 src/main/resources/db/migration/V1__create_game_history.sql
+src/main/resources/db/migration/V2__add_final_match_metadata.sql
 ```
 
 Hibernate is configured with:
@@ -71,6 +72,8 @@ Stores one CLI gameplay invocation:
 * completion timestamp
 * requested round count
 * completed round count
+* optional target score
+* completion reason: `ROUND_CAP` or `TARGET_SCORE`
 
 ### `game_players`
 
@@ -141,7 +144,9 @@ database. It verifies:
 `GameHistoryFlowIntegrationTest` runs the real deterministic controller flow
 through `GameHistoryService`. It proves that the five-round seed `123` session
 stores 3 players, 5 rounds, 15 round-score rows, final scores `138`, `246`, and
-`98`, and `Bot2` as final winner.
+`98`, and `Bot2` as final winner. It also verifies that a `--target-score 1`
+session stores `target_score = 1`, `completion_reason = TARGET_SCORE`, and one
+completed round.
 
 Tests do not require Docker, PostgreSQL, or developer-specific machine state.
 
@@ -169,14 +174,15 @@ docker compose up --build --abort-on-container-exit --exit-code-from app app
 ```
 
 This builds the image if needed, starts PostgreSQL, runs the deterministic
-five-round bot game, and then runs all three report queries against the same
-database.
+five-round bot game, runs a final-project target-score game, and then runs all
+three report queries against the same database.
 
 Run individual games and reports:
 
 ```bash
 scripts/run.sh
 scripts/run.sh --bots 3 --games 5 --quiet --seed 123
+scripts/run.sh --bots 3 --target-score 500 --quiet --seed 123
 scripts/run.sh --recent-games 10
 scripts/run.sh --player-wins Bot2
 scripts/run.sh --highest-scores 10
@@ -186,6 +192,7 @@ The equivalent raw Compose commands are:
 
 ```bash
 docker compose run --rm app --bots 3 --games 5 --quiet --seed 123
+docker compose run --rm app --bots 3 --target-score 500 --quiet --seed 123
 docker compose run --rm app --recent-games 10
 docker compose run --rm app --player-wins Bot2
 docker compose run --rm app --highest-scores 10

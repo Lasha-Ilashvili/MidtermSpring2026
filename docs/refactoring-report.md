@@ -9,7 +9,10 @@ The original project was a working UNO-like CLI game where almost all behavior l
 * `game` owns game state, card rules, deck/discard behavior, turn order, scoring, and bot decisions.
 * `ui` and `ui.cli` own startup input parsing, player input reading, and console output.
 
-This was done as incremental refactoring, not a rewrite. The code still uses the same simplified UNO rules and preserves the documented quirks from `docs/rules.html`.
+This was done as incremental refactoring, not a rewrite. At the midterm checkpoint,
+the code still used the same simplified UNO rules and preserved the documented
+quirks from `docs/rules.html`. The final-project branch later replaces the
+quirks that conflict with the final UNO rule reference.
 
 ## Behavior Characterized Before And During Refactoring
 
@@ -22,7 +25,7 @@ The tests cover:
 * legal play by number
 * legal play by action type
 * wild and wild draw four legality
-* the implementation quirk where any card code starting with `W` is legal as a wild prefix
+* exact wild-card validation, where only `W` and `W4` are wild cards
 * called color after a wild
 * bot card priority and color selection
 * drawing from the deck
