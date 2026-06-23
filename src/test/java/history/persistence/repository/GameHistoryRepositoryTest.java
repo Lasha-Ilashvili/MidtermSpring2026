@@ -23,6 +23,7 @@ import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest(showSql = false)
@@ -51,7 +52,7 @@ final class GameHistoryRepositoryTest {
 
     @Test
     void appliesMigrationAndPersistsCompleteGameGraph() {
-        assertEquals("1", flyway.info().current().getVersion().getVersion());
+        assertEquals("2", flyway.info().current().getVersion().getVersion());
 
         GameEntity game = saveGame(
                 Instant.parse("2026-06-15T10:00:00Z"),
@@ -66,7 +67,9 @@ final class GameHistoryRepositoryTest {
                 () -> assertEquals(1, roundRepository.count()),
                 () -> assertEquals(2, roundScoreRepository.count()),
                 () -> assertEquals("Alice", game.getRounds().getFirst().getWinner().getPlayer().getDisplayName()),
-                () -> assertEquals(75, game.getRounds().getFirst().getPointsAwarded())
+                () -> assertEquals(75, game.getRounds().getFirst().getPointsAwarded()),
+                () -> assertNull(game.getTargetScore()),
+                () -> assertEquals("ROUND_CAP", game.getCompletionReason())
         );
     }
 

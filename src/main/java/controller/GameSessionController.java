@@ -2,6 +2,7 @@ package controller;
 
 import game.UnoGame;
 import history.CompletedGame;
+import history.CompletedGame.CompletionReason;
 import history.CompletedRound;
 import history.PlayerResult;
 import history.PlayerScore;
@@ -43,12 +44,14 @@ final class GameSessionController {
     CompletedGame playGames(GameSettings settings) {
         Instant sessionStartedAt = clock.instant();
         List<CompletedRound> completedRounds = new ArrayList<>();
+        boolean targetScoreReached = false;
 
         for (int gameCount = 1; gameCount <= settings.games(); gameCount++) {
             LOGGER.info("event=game_start game={}", gameCount);
             view.showGameHeader(gameCount);
             completedRounds.add(playRound(gameCount));
             if (settings.hasTargetScore() && game.hasPlayerReachedScore(settings.targetScore())) {
+                targetScoreReached = true;
                 break;
             }
         }
@@ -57,6 +60,8 @@ final class GameSessionController {
                 sessionStartedAt,
                 clock.instant(),
                 settings.games(),
+                settings.targetScore(),
+                targetScoreReached ? CompletionReason.TARGET_SCORE : CompletionReason.ROUND_CAP,
                 playerResults(),
                 completedRounds
         );

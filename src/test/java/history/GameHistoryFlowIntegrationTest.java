@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest(showSql = false)
@@ -79,6 +80,8 @@ final class GameHistoryFlowIntegrationTest {
                 () -> assertEquals(3, playerRepository.count()),
                 () -> assertEquals(5, game.getRequestedRounds()),
                 () -> assertEquals(5, game.getCompletedRounds()),
+                () -> assertNull(game.getTargetScore()),
+                () -> assertEquals("ROUND_CAP", game.getCompletionReason()),
                 () -> assertEquals(5, game.getRounds().size()),
                 () -> assertEquals(15, roundScoreRepository.count()),
                 () -> assertTrue(game.getRounds().stream()
@@ -104,6 +107,32 @@ final class GameHistoryFlowIntegrationTest {
                 () -> assertTrue(playerWins.contains("bot2 wins: 1")),
                 () -> assertTrue(highestScores.contains("Highest scores:")),
                 () -> assertTrue(highestScores.contains("Bot2: 246"))
+        );
+    }
+
+    @Test
+    void persistsTargetScoreSessionMetadata() {
+        captureOutput(() -> UnoGameController.startNewGame(
+                new UiType.Cli(new String[]{
+                        "--bots", "3",
+                        "--games", "5",
+                        "--target-score", "1",
+                        "--quiet",
+                        "--seed", "123"
+                }),
+                gameHistoryService
+        ));
+
+        GameEntity game = gameRepository
+                .findAllByOrderByCompletedAtDescIdDesc(PageRequest.of(0, 1))
+                .getFirst();
+
+        assertAll(
+                () -> assertEquals(5, game.getRequestedRounds()),
+                () -> assertEquals(1, game.getCompletedRounds()),
+                () -> assertEquals(1, game.getTargetScore()),
+                () -> assertEquals("TARGET_SCORE", game.getCompletionReason()),
+                () -> assertEquals(1, game.getRounds().size())
         );
     }
 

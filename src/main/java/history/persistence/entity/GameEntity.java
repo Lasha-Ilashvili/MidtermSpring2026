@@ -36,6 +36,12 @@ public class GameEntity {
     @Column(name = "completed_rounds", nullable = false)
     private int completedRounds;
 
+    @Column(name = "target_score")
+    private Integer targetScore;
+
+    @Column(name = "completion_reason", nullable = false, length = 30)
+    private String completionReason;
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("playerOrder ASC")
     private List<GamePlayerEntity> players = new ArrayList<>();
@@ -48,10 +54,23 @@ public class GameEntity {
     }
 
     public GameEntity(Instant startedAt, Instant completedAt, int requestedRounds, int completedRounds) {
+        this(startedAt, completedAt, requestedRounds, completedRounds, null, "ROUND_CAP");
+    }
+
+    public GameEntity(
+            Instant startedAt,
+            Instant completedAt,
+            int requestedRounds,
+            int completedRounds,
+            Integer targetScore,
+            String completionReason
+    ) {
         this.startedAt = startedAt;
         this.completedAt = completedAt;
         this.requestedRounds = requestedRounds;
         this.completedRounds = completedRounds;
+        this.targetScore = targetScore;
+        this.completionReason = completionReason;
     }
 
     public void addPlayer(GamePlayerEntity player) {
@@ -82,6 +101,14 @@ public class GameEntity {
 
     public int getCompletedRounds() {
         return completedRounds;
+    }
+
+    public Integer getTargetScore() {
+        return targetScore;
+    }
+
+    public String getCompletionReason() {
+        return completionReason;
     }
 
     public List<GamePlayerEntity> getPlayers() {

@@ -46,7 +46,9 @@ public class GameHistoryService implements GameHistoryWriter, GameHistoryReader 
                 completedGame.startedAt(),
                 completedGame.completedAt(),
                 completedGame.requestedRounds(),
-                completedGame.completedRounds()
+                completedGame.completedRounds(),
+                completedGame.targetScore(),
+                completedGame.completionReason().name()
         );
         Map<String, GamePlayerEntity> gamePlayersByName = addPlayers(completedGame, game);
         addRounds(completedGame, game, gamePlayersByName);
