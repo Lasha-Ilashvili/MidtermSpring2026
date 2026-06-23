@@ -29,7 +29,7 @@ record Card(String code) {
     }
 
     boolean hasWildPrefix() {
-        return code.startsWith("W");
+        return isWild();
     }
 
     boolean canMatchRank(Card other) {
@@ -37,13 +37,16 @@ record Card(String code) {
     }
 
     boolean canMatchNumber(Card other) {
+        int thisNumber = number();
+        int otherNumber = other.number();
         return rank() == CardRank.NUMBER
                 && other.rank() == CardRank.NUMBER
-                && number() == other.number();
+                && thisNumber >= 0
+                && thisNumber == otherNumber;
     }
 
     int number() {
-        if (rank() == CardRank.NUMBER) {
+        if (rank() == CardRank.NUMBER && code.length() == 2 && Character.isDigit(code.charAt(1))) {
             return Integer.parseInt(code.substring(1));
         }
         return -1;

@@ -50,7 +50,7 @@ public final class GameCharacterizationTests {
         passed += check(game.isLegal("R+2", "B+2", ""), "same draw two action");
         passed += check(game.isLegal("W", "B3", ""), "plain wild always legal");
         passed += check(game.isLegal("W4", "B3", ""), "wild draw four always legal");
-        passed += check(game.isLegal("WX", "B3", ""), "wild prefix quirk is legal");
+        passed += check(!game.isLegal("WX", "B3", ""), "only W and W4 are wild cards");
         passed += check(game.isLegal("B3", "W", "B"), "called color after wild");
         passed += check(game.isLegal("B3", "R9", "B"), "called color can beat up card color");
         passed += check(!game.isLegal("B3", "R9", ""), "illegal mismatch");
