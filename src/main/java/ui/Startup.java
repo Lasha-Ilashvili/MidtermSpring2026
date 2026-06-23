@@ -28,12 +28,13 @@ public final class Startup {
             boolean human,
             boolean quiet,
             String seed,
+            String targetScore,
             Action action,
             Report report
     ) {
     }
 
     public static Input unsupportedUi() {
-        return new Input(null, null, false, false, null, Action.UNSUPPORTED_UI, null);
+        return new Input(null, null, false, false, null, null, Action.UNSUPPORTED_UI, null);
     }
 }

@@ -154,7 +154,7 @@ final class CliGameView implements GameView {
     public void showUsage() {
         System.out.println("""
                 Usage:
-                  scripts/run.sh [--bots N] [--games N] [--human] [--quiet] [--seed N]
+                  scripts/run.sh [--bots N] [--games N] [--target-score N] [--human] [--quiet] [--seed N]
                   scripts/run.sh --recent-games [N]
                   scripts/run.sh --player-wins "PLAYER NAME"
                   scripts/run.sh --highest-scores [N]

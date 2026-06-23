@@ -48,6 +48,16 @@ public class UnoGame {
         return players.scoresSnapshot();
     }
 
+    public boolean hasPlayerReachedScore(int targetScore) {
+        int[] scores = scoresSnapshot();
+        for (int score : scores) {
+            if (score >= targetScore) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void clearScores() {
         players.clearScores();
     }

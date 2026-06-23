@@ -20,6 +20,7 @@ final class CliStartupInputReader implements StartupInputReader {
         boolean human = false;
         boolean isQuiet = false;
         String seed = null;
+        String targetScore = null;
         Startup.Action action = Startup.Action.START_GAME;
         Startup.Report report = null;
         boolean gameplayOptionSeen = false;
@@ -42,6 +43,9 @@ final class CliStartupInputReader implements StartupInputReader {
                 gameplayOptionSeen = true;
             } else if (args[i].equals("--seed") && hasNext) {
                 seed = args[++i];
+                gameplayOptionSeen = true;
+            } else if (args[i].equals("--target-score") && hasNext) {
+                targetScore = args[++i];
                 gameplayOptionSeen = true;
             } else if (args[i].equals("--recent-games")) {
                 String limit = hasNext && !args[i + 1].startsWith("--") ? args[++i] : null;
@@ -72,6 +76,6 @@ final class CliStartupInputReader implements StartupInputReader {
             }
         }
 
-        return new Startup.Input(bots, games, human, isQuiet, seed, action, report);
+        return new Startup.Input(bots, games, human, isQuiet, seed, targetScore, action, report);
     }
 }

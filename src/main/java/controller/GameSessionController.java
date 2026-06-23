@@ -40,20 +40,23 @@ final class GameSessionController {
         return game.isPlayerCountValid();
     }
 
-    CompletedGame playGames(int games) {
+    CompletedGame playGames(GameSettings settings) {
         Instant sessionStartedAt = clock.instant();
         List<CompletedRound> completedRounds = new ArrayList<>();
 
-        for (int gameCount = 1; gameCount <= games; gameCount++) {
+        for (int gameCount = 1; gameCount <= settings.games(); gameCount++) {
             LOGGER.info("event=game_start game={}", gameCount);
             view.showGameHeader(gameCount);
             completedRounds.add(playRound(gameCount));
+            if (settings.hasTargetScore() && game.hasPlayerReachedScore(settings.targetScore())) {
+                break;
+            }
         }
 
         return new CompletedGame(
                 sessionStartedAt,
                 clock.instant(),
-                games,
+                settings.games(),
                 playerResults(),
                 completedRounds
         );

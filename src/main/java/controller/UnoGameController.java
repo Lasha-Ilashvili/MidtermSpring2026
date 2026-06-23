@@ -92,7 +92,7 @@ public class UnoGameController {
             return;
         }
 
-        CompletedGame completedGame = playGames(settings.games());
+        CompletedGame completedGame = playGames(settings);
         gameSessionController.showFinalScores();
         saveGameHistory(completedGame);
     }
@@ -109,8 +109,8 @@ public class UnoGameController {
         gameSessionController.setupGame(settings);
     }
 
-    private CompletedGame playGames(int games) {
-        return gameSessionController.playGames(games);
+    private CompletedGame playGames(GameSettings settings) {
+        return gameSessionController.playGames(settings);
     }
 
     private void saveGameHistory(CompletedGame completedGame) {

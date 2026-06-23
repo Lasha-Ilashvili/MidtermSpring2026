@@ -148,6 +148,18 @@ final class FinalRuleTest {
         assertEquals(3, game.hand(game.currentPlayer()).size());
     }
 
+    @Test
+    void targetScoreDetectionIsHandledByTheModel() {
+        UnoGame game = new UnoGame();
+        game.setupPlayers(3, false);
+
+        game.addScore(0, 499);
+        assertFalse(game.hasPlayerReachedScore(500));
+
+        game.addScore(1, 500);
+        assertTrue(game.hasPlayerReachedScore(500));
+    }
+
     private Map<String, Integer> drawAllCards(UnoGame game) {
         Map<String, Integer> counts = new HashMap<>();
         int cards = game.deckSize();
